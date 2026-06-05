@@ -95,23 +95,43 @@
   .gate button{margin-top:18px; background:var(--accent); border:none; color:#fff; padding:13px 24px; border-radius:12px; font-size:16px; font-weight:700;}
   .flash{position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:30; transition:opacity .05s;}
 
-  /* 橫向：壓扁面板，保留相機與快門 */
+  /* 極簡 HUD（預設拍攝畫面） */
+  .hud{position:absolute; left:0; right:0; bottom:0; z-index:6; display:flex; flex-direction:column;
+    align-items:center; gap:12px; padding:20px 0 max(16px,env(safe-area-inset-bottom));
+    background:linear-gradient(#0000,#000a); pointer-events:none;}
+  .hud>*{pointer-events:auto;}
+  .pickpill{display:flex; align-items:center; gap:5px; max-width:88vw; background:rgba(0,0,0,.5);
+    backdrop-filter:blur(8px); border:1px solid #ffffff30; color:#fff; border-radius:999px;
+    padding:8px 16px; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden;}
+  .pickpill b{color:var(--accent);}
+  .pickpill .up{opacity:.65; font-weight:500; margin-left:3px;}
+  .shootrow{display:flex; align-items:center; justify-content:center; gap:46px;}
+
+  /* 滑出面板 */
+  .backdrop{position:absolute; inset:0; z-index:8; background:#0007; opacity:0; pointer-events:none; transition:opacity .2s;}
+  .backdrop.show{opacity:1; pointer-events:auto;}
+  .sheet{position:absolute; left:0; right:0; bottom:0; z-index:9; background:rgba(16,16,18,.97);
+    backdrop-filter:blur(12px); border-top-left-radius:20px; border-top-right-radius:20px;
+    padding:0 0 max(14px,env(safe-area-inset-bottom)); transform:translateY(106%);
+    transition:transform .26s cubic-bezier(.2,.8,.2,1); max-height:54vh; overflow-y:auto;
+    display:flex; flex-direction:column; gap:7px;}
+  .sheet.open{transform:translateY(0);}
+  .grab{width:42px; height:5px; border-radius:3px; background:#ffffff55; margin:8px auto 2px; flex:0 0 auto;}
+  .sheet .vnav{display:flex; align-items:center; gap:6px; padding:2px 12px 0;}
+  .sheet .row{padding:0 12px 2px;}
+  .sheet .tipbody, .sheet .setline{padding:0 14px;}
+  .cats .chip.on{background:#ffffff2e; border-color:#fff6;}
+
+  /* 橫向：面板放大可捲動、快門縮小 */
   @media (orientation:landscape) and (max-height:540px){
     .top{padding:6px 12px;}
-    .tip{margin:0 8px 5px; padding:5px 9px 6px;}
-    .vnav button{width:26px; height:26px; font-size:15px;}
-    .vname{font-size:13px;}
-    .cardbody{margin-top:4px;}
-    .dots{margin-bottom:4px;}
-    .tipbody{font-size:11.5px; line-height:1.4;}
-    .setline{font-size:11px; margin-top:4px; padding-top:4px;}
-    .scenebar,.row{padding-bottom:5px;}
-    .chip{padding:6px 10px; font-size:12px;}
-    .catbtn{padding:6px 9px; font-size:12px;}
-    .bar{padding:6px 18px max(6px,env(safe-area-inset-bottom));}
-    .shutter{width:54px; height:54px; border-width:4px;}
+    .sheet{max-height:82vh;}
+    .sheet .chip{padding:6px 10px; font-size:12px;}
+    .hud{padding:10px 0 max(8px,env(safe-area-inset-bottom)); gap:8px;}
+    .shootrow{gap:34px;}
+    .shutter{width:56px; height:56px; border-width:4px;}
     .side{width:44px; height:44px; font-size:18px;}
-    .catsheet{bottom:96px; max-height:70vh;}
+    .pickpill{padding:6px 13px; font-size:12px;}
   }
 </style>
 </head>
@@ -124,9 +144,8 @@
 <div class="top">
   <div class="brand">男友救星 <small>· 構圖教練</small></div>
   <div class="spacer"></div>
-  <button class="tbtn" id="zenBtn">👁 淨空</button>
-  <button class="tbtn" id="lvlBtn">⊿ 水平 <span class="lvlnum" id="lvlTxt">--</span></button>
-  <button class="tbtn" id="gridBtn">▦ 格線</button>
+  <button class="tbtn" id="lvlBtn">⊿ <span class="lvlnum" id="lvlTxt">--</span></button>
+  <button class="tbtn" id="gridBtn">▦</button>
 </div>
 
 <div class="grids" id="gridMenu">
@@ -136,31 +155,29 @@
   <button data-g="off">○ 不顯示</button>
 </div>
 
-<div class="catsheet" id="catSheet"></div>
+<div class="backdrop" id="backdrop"></div>
 
-<div class="panel" id="panel">
-  <div class="tip" id="tipCard">
-    <div class="vnav">
-      <button id="vPrev" aria-label="上一種構圖">‹</button>
-      <div class="vname" id="vName"></div>
-      <button id="vNext" aria-label="下一種構圖">›</button>
-      <button id="cardToggle" class="mini" aria-label="收合">⌄</button>
-    </div>
-    <div class="cardbody" id="cardBody">
-      <div class="dots" id="vDots"></div>
-      <div class="tipbody" id="tipBody"></div>
-      <div class="setline" id="setLine"></div>
-    </div>
-  </div>
-  <div class="scenebar">
-    <button class="catbtn" id="catBtn">≡ <span id="catLabel">人像</span></button>
-    <div class="row scenes" id="scenes"></div>
-  </div>
-  <div class="bar">
+<div class="hud" id="hud">
+  <button class="pickpill" id="pickBtn"><span id="curScene"></span> · <b id="curVar"></b><span class="up">▴ 選構圖</span></button>
+  <div class="shootrow">
     <button class="side" id="flipBtn">🔄</button>
     <button class="shutter" id="shot" aria-label="拍照"></button>
     <button class="side" id="helpBtn">？</button>
   </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="grab" id="sheetClose"></div>
+  <div class="vnav">
+    <button id="vPrev" aria-label="上一種構圖">‹</button>
+    <div class="vname" id="vName"></div>
+    <button id="vNext" aria-label="下一種構圖">›</button>
+  </div>
+  <div class="dots" id="vDots"></div>
+  <div class="tipbody" id="tipBody"></div>
+  <div class="setline" id="setLine"></div>
+  <div class="row cats" id="cats"></div>
+  <div class="row scenes" id="scenes"></div>
 </div>
 
 <div class="gate" id="gate">
@@ -174,7 +191,7 @@
 <script>
 const $=s=>document.querySelector(s);
 const video=$('#cam'), cv=$('#overlay'), ctx=cv.getContext('2d');
-const gridMenu=$('#gridMenu'), catSheet=$('#catSheet');
+const gridMenu=$('#gridMenu'), sheet=$('#sheet'), backdrop=$('#backdrop');
 
 /* ===================================================================
    變體欄位（皆可選）：n 名 / t 口訣
@@ -473,16 +490,22 @@ let levelMode=null;
 let levelOn=false, facing='environment', zen=false;
 let roll=0, beta=0, gamma=0;
 
-/* ====================== 類別選單（收進按鈕） ====================== */
-CATS.forEach(c=>{
-  const b=document.createElement('button'); b.dataset.id=c.id; b.innerHTML=`${c.e} ${c.name}`;
-  b.onclick=()=>{ cat=c.id; $('#catLabel').textContent=c.name; catSheet.classList.remove('show');
-    catSheet.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.id===cat));
+/* ====================== 類別列（在滑出面板內） ====================== */
+const catsEl=$('#cats');
+CATS.forEach((c,i)=>{
+  const b=document.createElement('button'); b.className='chip'+(i===0?' on':''); b.dataset.id=c.id;
+  b.innerHTML=`<span class="e">${c.e}</span>${c.name}`;
+  b.onclick=()=>{ cat=c.id;
+    document.querySelectorAll('#cats .chip').forEach(x=>x.classList.toggle('on',x.dataset.id===c.id));
     buildScenes(); selectScene(SCENES.find(s=>s.cat===cat)); };
-  catSheet.appendChild(b);
+  catsEl.appendChild(b);
 });
-catSheet.querySelector('button').classList.add('on');
-$('#catBtn').onclick=()=>catSheet.classList.toggle('show');
+
+/* 滑出面板開關 */
+function openSheet(){ sheet.classList.add('open'); backdrop.classList.add('show'); }
+function closeSheet(){ sheet.classList.remove('open'); backdrop.classList.remove('show'); }
+$('#pickBtn').onclick=()=>{ sheet.classList.contains('open')?closeSheet():openSheet(); };
+$('#sheetClose').onclick=closeSheet; $('#backdrop').onclick=closeSheet;
 
 const scenesEl=$('#scenes');
 function buildScenes(){
@@ -507,21 +530,18 @@ function renderVariant(){
   $('#tipBody').innerHTML=`💡 ${v.t}`;
   $('#setLine').innerHTML=`📷 ${scene.set}`;
   $('#vDots').innerHTML=scene.v.map((_,i)=>`<i class="${i===vi?'on':''}"></i>`).join('');
+  $('#curScene').textContent=`${scene.e} ${scene.name}`;
+  $('#curVar').textContent=v.n;
   if(levelMode) enableLevel();
 }
 function changeVariant(d){ vi=(vi+d+scene.v.length)%scene.v.length; renderVariant(); }
 $('#vPrev').onclick=()=>changeVariant(-1);
 $('#vNext').onclick=()=>changeVariant(1);
-$('#cardToggle').onclick=()=>{ const c=$('#tipCard'); c.classList.toggle('collapsed');
-  $('#cardToggle').textContent=c.classList.contains('collapsed')?'⌃':'⌄'; };
 buildScenes(); selectScene(SCENES[0]);
 
-/* 淨空 */
-$('#zenBtn').onclick=()=>{ zen=!zen; $('#panel').classList.toggle('zen',zen); $('#zenBtn').classList.toggle('on',zen); };
-
-/* 左右滑動切換變體 */
+/* 左右滑動切換變體（只在乾淨拍攝畫面有效，面板/按鈕上不觸發） */
 let tsx=null;
-document.addEventListener('touchstart',e=>{ if(e.target.closest('.scenebar,.bar,.grids,.catsheet,.gate,.vnav,.row')){tsx=null; return;} tsx=e.touches[0].clientX; },{passive:true});
+document.addEventListener('touchstart',e=>{ if(e.target.closest('.sheet,.shootrow,.pickpill,.grids,.gate,.top,.backdrop')){tsx=null; return;} tsx=e.touches[0].clientX; },{passive:true});
 document.addEventListener('touchend',e=>{ if(tsx==null) return; const dx=e.changedTouches[0].clientX-tsx;
   if(Math.abs(dx)>55) changeVariant(dx<0?1:-1); tsx=null; },{passive:true});
 
@@ -561,7 +581,7 @@ function onOrient(ev){
 /* ====================== 相機 ====================== */
 let starting=false;
 async function getStream(){
-  try{ return await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}, width:{ideal:1920}, height:{ideal:1080}}, audio:false}); }
+  try{ return await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}, width:{ideal:3840}, height:{ideal:2160}}, audio:false}); }
   catch(e){ if(e && (e.name==='OverconstrainedError'||e.name==='NotFoundError'||e.name==='NotReadableError'))
       return await navigator.mediaDevices.getUserMedia({video:true, audio:false}); throw e; }
 }
@@ -711,20 +731,37 @@ function drawLevel(W,H){
   }
 }
 
-/* ====================== 拍照 ====================== */
-$('#shot').onclick=()=>{
+/* ====================== 拍照（最高畫質 + 分享/儲存） ====================== */
+async function capture(){
   if(!video.videoWidth) return;
-  const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
-  const x=c.getContext('2d');
-  if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); }
-  x.drawImage(video,0,0,c.width,c.height);
+  let blob=null;
+  // Android Chrome：用 ImageCapture 拍更高畫質的靜照
+  const track = video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0];
+  if(track && window.ImageCapture){
+    try{ blob = await new ImageCapture(track).takePhoto(); }catch(e){ blob=null; }
+  }
+  // 後備：擷取目前畫面（以串流最高畫質）
+  if(!blob){
+    const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
+    const x=c.getContext('2d');
+    if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); }
+    x.drawImage(video,0,0,c.width,c.height);
+    blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
+  }
+  if(!blob) return;
   const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60);
-  c.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b);
-    a.download='photo_'+Date.now()+'.jpg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-  },'image/jpeg',0.95);
-};
+  const file=new File([blob],'男友救星_'+Date.now()+'.jpg',{type:blob.type||'image/jpeg'});
+  // 分享/儲存面板（可存到相簿或傳給別人）
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  // 後備：下載
+  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+$('#shot').onclick=()=>capture();
 
-$('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 點左下「≡ 類別」選大類，再選題材\n2. 每個題材有多種「構圖卡」：用提示列 ‹ › 或左右滑動切換\n3. 畫面疊上「人放這」位置＋引導線；下方「📷」是建議參數\n4. 右上「水平」保持 ±2°（綠）不拍歪；「👁 淨空」可隱藏面板看乾淨畫面\n5. 中央大鈕拍乾淨原圖\n\n核心：人放三分線、腳要進框、相機放低、別拍歪。'); };
+$('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 平常畫面很乾淨：相機＋人形/格線＋快門\n2. 點下方「選構圖」滑出面板：選大類→題材→用 ‹ › 切換構圖卡；面板裡有口訣與 📷 建議參數\n3. 收起面板後，畫面留著「人放這」位置；在畫面左右滑動可換構圖\n4. 右上 ⊿ 水平、▦ 格線\n5. 中央大鈕拍照 → 跳出分享/儲存（可存到相簿或傳出）\n\n核心：人放三分線、腳要進框、相機放低、別拍歪。'); };
 
 /* ====================== 啟動 ====================== */
 syncGridMenu(); resize(); draw(); showStart();
