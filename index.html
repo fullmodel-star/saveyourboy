@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="男友救星">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>男友救星 · 構圖教練</title>
 <style>
   :root{ --accent:#ff5b8a; --good:#21d07a; --warn:#ff5b5b; --blue:#78b4ff; --gold:#ffd264;
@@ -696,6 +700,7 @@ $('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 點左下�
 /* ====================== 啟動 ====================== */
 syncGridMenu(); resize(); draw(); showStart();
 document.addEventListener('click',()=>{ if(!levelOn && levelMode) enableLevel(); },{once:true});
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 </script>
 </body>
 </html>
