@@ -120,6 +120,7 @@
 <script>
 const $=s=>document.querySelector(s);
 const video=$('#cam'), cv=$('#overlay'), ctx=cv.getContext('2d');
+const gridMenu=$('#gridMenu');   // 提前宣告：selectScene 啟動時會用到，避免 TDZ 錯誤
 
 /* ====================== 題材分類資料 ====================== */
 const CATS=[
@@ -238,7 +239,6 @@ function selectScene(s){
 buildScenes(); selectScene(SCENES[0]);
 
 /* ====================== 格線選單 ====================== */
-const gridMenu=$('#gridMenu');
 $('#gridBtn').onclick=()=>gridMenu.classList.toggle('show');
 gridMenu.querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ grid=b.dataset.g; syncGridMenu(); gridMenu.classList.remove('show'); };
