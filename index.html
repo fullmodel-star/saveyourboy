@@ -542,9 +542,18 @@ async function enableLevel(){
   window.addEventListener('deviceorientation', onOrient);
   levelOn=true; $('#lvlBtn').classList.add('on');
 }
+function screenAngle(){
+  if(screen.orientation && typeof screen.orientation.angle==='number') return screen.orientation.angle;
+  if(typeof window.orientation==='number') return (window.orientation+360)%360;
+  return 0;
+}
 function onOrient(ev){
-  beta=ev.beta||0; gamma=ev.gamma||0; roll=gamma;
-  let dev = levelMode==='flat' ? Math.round(Math.max(Math.abs(beta),Math.abs(gamma))) : Math.round(gamma);
+  beta=ev.beta||0; gamma=ev.gamma||0;
+  // 依目前螢幕方向換算「左右傾角」（直拍用 gamma，橫拍改用 beta）
+  const a=screenAngle();
+  let tilt = a===90 ? -beta : a===270 ? beta : a===180 ? -gamma : gamma;
+  roll=tilt;
+  let dev = levelMode==='flat' ? Math.round(Math.max(Math.abs(beta),Math.abs(gamma))) : Math.round(tilt);
   $('#lvlTxt').textContent=(dev>0?'+':'')+dev+'°';
   $('#lvlTxt').style.color = Math.abs(dev)<=2 ? 'var(--good)' : (Math.abs(dev)<=6?'#ffd166':'var(--warn)');
 }
@@ -600,6 +609,7 @@ function resize(){ const r=cv.getBoundingClientRect();
   cv.width=r.width*devicePixelRatio; cv.height=r.height*devicePixelRatio;
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
 addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,200));
 
 /* ====================== 繪圖 ====================== */
 function line(a,b,c,d){ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke();}
