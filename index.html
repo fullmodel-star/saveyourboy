@@ -266,33 +266,63 @@ function onOrient(ev){
 }
 
 /* ====================== 相機 ====================== */
+let starting=false;
+async function getStream(){
+  // 先用理想設定，失敗（裝置不支援該鏡頭/解析度）就退回最寬鬆設定
+  try{
+    return await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:facing}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+  }catch(e){
+    if(e && (e.name==='OverconstrainedError'||e.name==='NotFoundError'||e.name==='NotReadableError')){
+      return await navigator.mediaDevices.getUserMedia({video:true, audio:false});
+    }
+    throw e;
+  }
+}
 async function startCam(){
+  if(starting) return; starting=true;
   try{
     if(location.protocol==='file:') throw {name:'FileProtocol'};
+    if(!isSecureContext) throw {name:'Insecure'};
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'NoCamAPI'};
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:facing}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
-    video.srcObject=stream; await video.play();
+    stopCam();
+    const stream=await getStream();
+    video.srcObject=stream;
+    video.setAttribute('playsinline',''); video.muted=true;
+    await video.play();
     $('#gate').classList.remove('show'); resize();
   }catch(err){ showGate(err); }
+  finally{ starting=false; }
 }
-function stopCam(){ if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop()); }
-$('#flipBtn').onclick=async()=>{ facing=facing==='environment'?'user':'environment'; stopCam(); await startCam(); };
+function stopCam(){ if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; } }
+$('#flipBtn').onclick=async()=>{ facing=facing==='environment'?'user':'environment'; await startCam(); };
 
+function showStart(){
+  const g=$('#gate'); g.classList.add('show');
+  $('#gateTitle').textContent='男友救星 · 構圖教練';
+  $('#gateMsg').innerHTML='點下面開啟相機。<br>首次會詢問<b>相機權限</b>，請按「允許」。';
+  $('#gateBtn').textContent='📷 開啟相機';
+}
 function showGate(err){
   const g=$('#gate'); g.classList.add('show'); $('#gateBtn').textContent='重試';
-  if(err && err.name==='NoCamAPI'){
+  if(err && err.name==='Insecure'){
+    $('#gateTitle').textContent='需要安全連線（HTTPS）';
+    $('#gateMsg').innerHTML='相機只能在 <b>https://</b> 網址下使用。請確認網址開頭是 https，或用「加入主畫面」後的圖示開啟。';
+  }else if(err && err.name==='NoCamAPI'){
     $('#gateTitle').textContent='這個畫面不能用相機';
     $('#gateMsg').innerHTML='你現在是在<b>內嵌預覽視窗</b>或非安全環境開啟，瀏覽器不提供相機功能。<br><br>請把檔案放到 <b>HTTPS 網址</b>（GitHub Pages／Netlify），用<b>手機瀏覽器</b>打開那個網址即可。';
   }else if(err && err.name==='FileProtocol'){
     $('#gateTitle').textContent='需要用網址開啟';
     $('#gateMsg').innerHTML='手機規定：直接點開檔案（file://）不能用相機。請放到 <b>HTTPS 網址</b>，用網址打開、再「加入主畫面」即可離線使用。';
   }else if(err && (err.name==='NotAllowedError'||err.name==='SecurityError')){
-    $('#gateTitle').textContent='相機被拒絕了';
-    $('#gateMsg').innerHTML='請到網址列旁的權限設定，把<b>相機改成允許</b>再重試。';
+    $('#gateTitle').textContent='相機權限被拒絕';
+    $('#gateMsg').innerHTML='請到網址列旁🔒或瀏覽器設定，把<b>相機改成允許</b>，再按重試。<br>（iPhone：設定 → Safari → 相機 → 允許）';
+  }else if(err && err.name==='NotReadableError'){
+    $('#gateTitle').textContent='相機被佔用了';
+    $('#gateMsg').innerHTML='相機正被其他 App（相機/視訊/另一個分頁）使用中。請<b>關掉那些 App 與分頁</b>再重試。';
   }else{
     $('#gateTitle').textContent='開不了相機';
-    $('#gateMsg').innerHTML='可能是裝置沒相機或被其他 App 佔用。錯誤："'+(err&&err.name||err)+'"';
+    $('#gateMsg').innerHTML='錯誤："'+(err&&err.name||err)+'"<br>'+((err&&err.message)?('<small style=\"opacity:.7\">'+err.message+'</small>'):'')+'<br><br>請改用<b>系統內建瀏覽器</b>（iPhone 用 Safari、Android 用 Chrome）開啟，別在 LINE/IG/FB 的內建瀏覽器裡開——它們常擋相機。';
   }
 }
 $('#gateBtn').onclick=startCam;
@@ -417,7 +447,7 @@ $('#shot').onclick=()=>{
 $('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 下排先選大類（人像/風景/花季/建築/美食/寵物），再選上排的題材\n2. 畫面會疊上該題材專屬的參考框＋機位口訣\n3. 右上「水平」開啟後，數字保持在 ±2°（綠色）就不會拍歪\n4. 中央大圓鈕拍照，存的是乾淨原圖（不含輔助線）\n\n核心口訣：人放三分線、腳要進框、相機放低、別拍歪。'); };
 
 /* ====================== 啟動 ====================== */
-syncGridMenu(); resize(); draw(); startCam();
+syncGridMenu(); resize(); draw(); showStart();
 document.addEventListener('click',()=>{ if(!levelOn && scene.level) enableLevel(); },{once:true});
 </script>
 </body>
