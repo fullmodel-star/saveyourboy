@@ -8,10 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>男友救星 · 構圖教練</title>
 <style>
-  :root{
-    --accent:#ff5b8a; --good:#21d07a; --warn:#ff5b5b;
-    --ink:#fff; --bg:#0a0a0a; --chip:rgba(255,255,255,.12);
-  }
+  :root{ --accent:#ff5b8a; --good:#21d07a; --warn:#ff5b5b; --blue:#78b4ff;
+    --ink:#fff; --bg:#0a0a0a; --chip:rgba(255,255,255,.12); }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
   html,body{margin:0; height:100%; background:var(--bg); color:var(--ink);
     font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif; overflow:hidden;}
@@ -19,7 +17,6 @@
   video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
   canvas{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
 
-  /* 頂部標題 + 工具 */
   .top{position:absolute; top:0; left:0; right:0; padding:max(10px,env(safe-area-inset-top)) 12px 10px;
     display:flex; align-items:center; gap:8px; z-index:5;
     background:linear-gradient(#000a,#0000); pointer-events:none;}
@@ -29,56 +26,56 @@
   .tbtn{pointer-events:auto; background:var(--chip); border:none; color:#fff;
     border-radius:999px; padding:8px 12px; font-size:13px; font-weight:600; backdrop-filter:blur(8px);}
   .tbtn.on{background:var(--accent);}
+  .lvlnum{font-variant-numeric:tabular-nums;}
 
-  /* 教練提示 */
-  .tip{position:absolute; left:12px; right:12px; bottom:188px; z-index:5;
-    background:rgba(0,0,0,.55); backdrop-filter:blur(10px); border:1px solid #ffffff22;
-    border-radius:14px; padding:11px 14px; font-size:14px; line-height:1.5;
-    display:flex; gap:9px; align-items:flex-start; transition:opacity .2s;}
-  .tip b{color:var(--accent);}
-  .tip .ic{font-size:18px; line-height:1.2;}
+  /* 底部整合面板 */
+  .panel{position:absolute; left:0; right:0; bottom:0; z-index:6; display:flex; flex-direction:column;
+    pointer-events:none;}
+  .panel>*{pointer-events:auto;}
 
-  /* 場景列 */
-  .scenes{position:absolute; left:0; right:0; bottom:118px; z-index:5;
-    display:flex; gap:8px; overflow-x:auto; padding:0 12px 4px; scrollbar-width:none;}
-  .scenes::-webkit-scrollbar{display:none;}
-  .scene{flex:0 0 auto; background:var(--chip); border:1px solid #ffffff14; color:#fff;
-    border-radius:14px; padding:9px 13px; font-size:13px; font-weight:600; white-space:nowrap;
-    display:flex; flex-direction:column; align-items:center; gap:2px; min-width:62px;}
-  .scene .e{font-size:19px;}
-  .scene.on{background:var(--accent); border-color:transparent;}
+  .tip{margin:0 12px 8px; background:rgba(0,0,0,.58); backdrop-filter:blur(10px);
+    border:1px solid #ffffff22; border-radius:14px; padding:10px 13px; font-size:13.5px; line-height:1.5;}
+  .tip .h{font-weight:700; margin-bottom:3px;}
+  .tip .h b{color:var(--accent);}
+  .tip ul{margin:0; padding:0; list-style:none;}
+  .tip li{opacity:.92; font-size:12.5px; line-height:1.6; display:flex; gap:6px;}
+  .tip li::before{content:'·'; color:var(--accent); font-weight:900;}
 
-  /* 底部控制 */
-  .bar{position:absolute; left:0; right:0; bottom:0; z-index:6;
-    padding:14px 22px max(16px,env(safe-area-inset-bottom));
+  .row{display:flex; gap:7px; overflow-x:auto; padding:0 12px 8px; scrollbar-width:none;}
+  .row::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto; background:var(--chip); border:1px solid #ffffff14; color:#fff;
+    border-radius:13px; padding:8px 12px; font-size:13px; font-weight:600; white-space:nowrap;
+    display:flex; align-items:center; gap:5px;}
+  .chip .e{font-size:16px;}
+  .cats .chip.on{background:#ffffff26; border-color:#fff5;}
+  .scenes .chip.on{background:var(--accent); border-color:transparent;}
+
+  .bar{padding:10px 22px max(14px,env(safe-area-inset-bottom));
     display:flex; align-items:center; justify-content:space-between;
     background:linear-gradient(#0000,#000c);}
-  .side{width:54px; height:54px; border-radius:50%; border:none; background:var(--chip);
-    color:#fff; font-size:22px; backdrop-filter:blur(8px);}
-  .shutter{width:74px; height:74px; border-radius:50%; border:5px solid #fff; background:#fff3;
+  .side{width:52px; height:52px; border-radius:50%; border:none; background:var(--chip);
+    color:#fff; font-size:21px; backdrop-filter:blur(8px);}
+  .shutter{width:72px; height:72px; border-radius:50%; border:5px solid #fff; background:#fff3;
     box-shadow:0 0 0 3px #0006; transition:transform .08s;}
   .shutter:active{transform:scale(.92);}
 
-  /* 格線小選單 */
   .grids{position:absolute; right:12px; top:54px; z-index:7; display:none;
     background:rgba(20,20,20,.92); backdrop-filter:blur(10px); border:1px solid #ffffff1f;
     border-radius:14px; padding:6px; gap:4px; flex-direction:column; min-width:150px;}
   .grids.show{display:flex;}
   .grids button{background:none; border:none; color:#fff; text-align:left; padding:9px 12px;
-    border-radius:9px; font-size:14px; display:flex; gap:8px; align-items:center;}
+    border-radius:9px; font-size:14px;}
   .grids button.on{background:var(--accent);}
 
-  /* 開鏡頭失敗 / 提示遮罩 */
   .gate{position:absolute; inset:0; z-index:20; background:#0c0c0c; display:none;
     flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px;}
   .gate.show{display:flex;}
   .gate h2{margin:0 0 6px; font-size:20px;}
-  .gate p{opacity:.8; font-size:14px; line-height:1.7; max-width:340px;}
+  .gate p{opacity:.8; font-size:14px; line-height:1.7; max-width:360px;}
   .gate .big{font-size:44px; margin-bottom:10px;}
   .gate button{margin-top:18px; background:var(--accent); border:none; color:#fff;
     padding:13px 24px; border-radius:12px; font-size:16px; font-weight:700;}
   .flash{position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:30; transition:opacity .05s;}
-  .lvlnum{font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -96,20 +93,20 @@
 
 <div class="grids" id="gridMenu">
   <button data-g="thirds" class="on">▦ 三分法</button>
-  <button data-g="phi">◠ 黃金螺旋</button>
   <button data-g="center">＋ 中心十字</button>
   <button data-g="diag">✕ 對角線</button>
   <button data-g="off">○ 不顯示</button>
 </div>
 
-<div class="tip" id="tip"><span class="ic">💡</span><span id="tipText"></span></div>
-
-<div class="scenes" id="scenes"></div>
-
-<div class="bar">
-  <button class="side" id="flipBtn">🔄</button>
-  <button class="shutter" id="shot" aria-label="拍照"></button>
-  <button class="side" id="helpBtn">？</button>
+<div class="panel">
+  <div class="tip" id="tip"></div>
+  <div class="row scenes" id="scenes"></div>
+  <div class="row cats" id="cats"></div>
+  <div class="bar">
+    <button class="side" id="flipBtn">🔄</button>
+    <button class="shutter" id="shot" aria-label="拍照"></button>
+    <button class="side" id="helpBtn">？</button>
+  </div>
 </div>
 
 <div class="gate" id="gate">
@@ -124,126 +121,183 @@
 const $=s=>document.querySelector(s);
 const video=$('#cam'), cv=$('#overlay'), ctx=cv.getContext('2d');
 
-/* ---------- 場景設定 ---------- */
-const SCENES=[
-  {id:'thirds', e:'✨', name:'萬用', grid:'thirds',
-   tip:'把女友的<b>臉或眼睛對到交叉點</b>，別擺正中央，畫面立刻有層次。'},
-  {id:'full', e:'🧍‍♀️', name:'全身', grid:'thirds', frame:'full',
-   tip:'<b>腳一定要拍進來！</b>腳底貼近下框線、頭頂只留一點點，<b>相機放低到腰部</b>她的腿會變超長。'},
-  {id:'half', e:'👚', name:'半身', grid:'thirds', frame:'half',
-   tip:'裁切在<b>腰或大腿中段</b>，千萬<b>別切在膝蓋、手腕、脖子</b>等關節處。'},
-  {id:'ig', e:'📍', name:'打卡', grid:'thirds', frame:'side',
-   tip:'人站在<b>左或右的三分線</b>上，另一半留給景；蹲低一點往上拍，腿長＋背景乾淨。'},
-  {id:'food', e:'🍰', name:'美食', grid:'center', level:'flat',
-   tip:'<b>正上方俯拍</b>，手機放到水平（水平數字接近 0、變綠）；或改 45° 斜拍更有立體感。'},
-  {id:'couple', e:'🤳', name:'自拍', grid:'thirds',
-   tip:'手<b>伸到最長</b>、相機<b>略高於眼睛往下拍</b>顯臉小；兩人臉放在畫面上半部。'},
-  {id:'scene', e:'🏞️', name:'風景', grid:'thirds', horizon:true, level:'tilt',
-   tip:'地平線<b>壓在下面那條線</b>（天空美）或<b>上面那條</b>（地景美），別切在正中間。'},
-  {id:'arch', e:'🏛️', name:'建築', grid:'thirds', vert:true, level:'tilt',
-   tip:'手機<b>打直</b>、把垂直線對齊格線，避免大樓往後倒（梯形變形）。'},
+/* ====================== 題材分類資料 ====================== */
+const CATS=[
+  {id:'people', e:'🧍', name:'人像'},
+  {id:'nature', e:'🏞️', name:'風景'},
+  {id:'plant',  e:'🌸', name:'花季'},
+  {id:'arch',   e:'🏛️', name:'建築街景'},
+  {id:'food',   e:'🍰', name:'美食物件'},
+  {id:'animal', e:'🐾', name:'寵物小孩'},
 ];
 
-/* ---------- 狀態 ---------- */
+// 每個題材：grid 格線 / frame 參考框 / horizon 地平線位置 / sym 對稱線 / vert 垂直線 /
+// sun 建議主體點 / fbox 框架式 / level 水平儀模式 / tip 標題 / cheats 機位口訣
+const SCENES=[
+ // ---- 人像 ----
+ {cat:'people', id:'full', e:'🧍‍♀️', name:'全身顯高', grid:'thirds', frame:'full', level:'tilt',
+  tip:'天地比 <b>8:2</b>，腳一定要進框', cheats:['機位：相機降到腰部、由下往上拍','姿勢：身體側 15°、前腳尖踮、膝微彎顯腿長','頭頂只留一點點，腳底貼近下框線']},
+ {cat:'people', id:'half', e:'👚', name:'半身', grid:'thirds', frame:'half',
+  tip:'裁切在腰／大腿中段', cheats:['千萬別切在膝蓋、手腕、脖子等關節','臉放上方三分線、留一點頭頂空間']},
+ {cat:'people', id:'face', e:'😊', name:'臉部特寫', grid:'thirds', frame:'face',
+  tip:'眼睛對齊<b>上三分線</b>', cheats:['對焦點放在眼睛','臉略側、別完全正面，立體又顯瘦']},
+ {cat:'people', id:'selfie', e:'🤳', name:'情侶自拍', grid:'thirds', frame:'selfie',
+  tip:'相機<b>略高於眼睛</b>往下拍', cheats:['手伸到最長，臉會比較小','兩人臉放畫面上半部、頭靠近一點']},
+ {cat:'people', id:'group', e:'👥', name:'多人合照', grid:'thirds', frame:'group',
+  tip:'相機高度<b>與臉同高</b>', cheats:['排成微微弧形、別站一直線','廣角時大家往中間靠，邊緣會被拉胖']},
+ {cat:'people', id:'backlit', e:'🌇', name:'逆光人像', grid:'thirds', frame:'half',
+  tip:'逆光要<b>點臉補光</b>或拍剪影', cheats:['想看清臉：點一下她的臉再拍（或開補光）','想要氛圍：對亮處測光，拍成漂亮剪影']},
+
+ // ---- 風景 ----
+ {cat:'nature', id:'mountain', e:'⛰️', name:'山景', grid:'thirds', horizon:'low', level:'tilt',
+  tip:'放<b>前景</b>製造層次與景深', cheats:['強調地景：地平線壓上三分線（地占 2/3）','前景放石頭/樹/花，畫面更立體','找路、稜線當引導線帶進主體']},
+ {cat:'nature', id:'sea', e:'🌊', name:'海景', grid:'thirds', horizon:'low', level:'tilt',
+  tip:'海平線壓在<b>下三分線</b>', cheats:['天空美就讓天占 2/3、地景占 1/3','務必拉水平、別讓海面歪掉']},
+ {cat:'nature', id:'sunset', e:'🌅', name:'日落夕陽', grid:'thirds', horizon:'low', sun:'tr', level:'tilt',
+  tip:'太陽放<b>三分交叉點</b>', cheats:['對天空亮處測光，寧可稍微暗一點','前景人/物會變剪影，輪廓要乾淨','太陽剛落地平線、橘紅色時最美']},
+ {cat:'nature', id:'night', e:'🌃', name:'城市夜景', grid:'thirds', sym:'v',
+  tip:'搶<b>藍調時刻</b>（日落後 20 分）', cheats:['有水面就拍倒影、上下對稱','拍車軌光軌要長曝＋穩住手機/腳架','低 ISO 畫面才乾淨']},
+ {cat:'nature', id:'reflect', e:'🪞', name:'倒影水面', grid:'thirds', sym:'h',
+  tip:'上下<b>二分對稱</b>構圖', cheats:['相機貼近水面、越低倒影越完整','把主體與倒影對稱排好','風小、水靜時倒影最清楚']},
+
+ // ---- 花季 ----
+ {cat:'plant', id:'sakura', e:'🌸', name:'櫻花', grid:'thirds', level:'tilt',
+  tip:'帶<b>仰角</b>＋大光圈散景', cheats:['仰拍帶一點天空、讓光暈穿過花','背景挑遠、單色，散景才乾淨','適度留白，別把整片花塞滿']},
+ {cat:'plant', id:'flower', e:'🌷', name:'花卉特寫', grid:'thirds', frame:'face',
+  tip:'淺景深、<b>前景虛化</b>當點綴', cheats:['靠近一點、用大光圈/微距','對焦花蕊，前後放幾朵當虛化前景','背景越單純越突出主角']},
+ {cat:'plant', id:'field', e:'🌻', name:'花海楓葉', grid:'thirds', horizon:'low', level:'tilt',
+  tip:'用<b>前景引導線</b>帶進深度', cheats:['蹲低、讓花鋪滿前景往遠方延伸','人站三分線，當畫面的視覺重點','花海占 2/3、天空占 1/3']},
+
+ // ---- 建築街景 ----
+ {cat:'arch', id:'building', e:'🏛️', name:'建築', vert:true, sym:'v', grid:'thirds', level:'tilt',
+  tip:'<b>垂直線保持垂直</b>', cheats:['手機打直、貼齊垂直格線，避免大樓後倒','正面對稱拍，左右互為鏡像','想顯高大就蹲低仰拍']},
+ {cat:'arch', id:'street', e:'🚶', name:'街拍紀實', grid:'thirds',
+  tip:'用<b>引導線</b>＋抓拍瞬間', cheats:['道路、欄杆、騎樓線條引導視線到主體','人物放三分線、留出走向的空間','等一個好的瞬間再按']},
+ {cat:'arch', id:'frame', e:'🖼️', name:'框架構圖', grid:'off', fbox:true,
+  tip:'用<b>門窗/樹枝框住</b>主體', cheats:['找前景的洞、門、窗、拱門當外框','主體放框的正中、其餘壓暗','框可以稍微失焦，主體更突出']},
+ {cat:'arch', id:'indoor', e:'☕', name:'室內咖啡廳', grid:'thirds',
+  tip:'靠<b>窗光</b>＋大量留白', cheats:['人/餐點靠窗，光從側面打最有層次','背景留白、桌面別太雜','人物或杯子放三分線']},
+
+ // ---- 美食物件 ----
+ {cat:'food', id:'food_top', e:'🍱', name:'美食俯拍', grid:'center', level:'flat',
+  tip:'<b>90° 正俯拍</b>、手機放平', cheats:['看中央氣泡置中、數字接近 0','多盤、拼盤、有桌布時最適合','四周留白，別塞到邊']},
+ {cat:'food', id:'food_45', e:'🍰', name:'美食 45°', grid:'thirds',
+  tip:'<b>45° 斜拍</b>最自然有立體感', cheats:['主體放三分線、後面放配角','找側面自然光、避免頂光硬陰影','背景虛化一點突出主菜']},
+ {cat:'food', id:'drink', e:'🥤', name:'飲料高食物', grid:'thirds',
+  tip:'<b>低角度側拍</b>拍出高度', cheats:['杯子蛋糕、霜淇淋、飲料都壓低拍','主體放三分線、留出背景','逆光或側光讓飲料透出光感']},
+ {cat:'food', id:'product', e:'📦', name:'商品網拍', grid:'center', level:'flat',
+  tip:'<b>置中</b>＋乾淨背景', cheats:['正面或正俯拍、商品擺正','純色/簡潔背景，四周留邊距','光線均勻、別有雜亂陰影']},
+
+ // ---- 寵物小孩 ----
+ {cat:'animal', id:'pet', e:'🐶', name:'寵物', grid:'thirds', frame:'face',
+  tip:'<b>蹲到牠視線高度</b>', cheats:['趴低、和牠的眼睛同高最有共鳴','對焦眼睛、開連拍抓表情','用零食/玩具吸引牠看鏡頭']},
+ {cat:'animal', id:'kid', e:'🧒', name:'小孩', grid:'thirds', frame:'half',
+  tip:'<b>蹲到孩子的視線高</b>', cheats:['別站著由上往下拍，會顯矮','開連拍抓自然表情與動作','放在三分線、留出他看/走的方向']},
+];
+
+/* ====================== 狀態 ====================== */
+let cat='people';
 let scene=SCENES[0];
-let grid='thirds';
+let grid=scene.grid;
 let levelOn=false, facing='environment';
-let roll=0, beta=0, gamma=0;   // 裝置姿態
+let roll=0, beta=0, gamma=0;
 
-/* ---------- 建立場景按鈕 ---------- */
-const scenesEl=$('#scenes');
-SCENES.forEach((s,i)=>{
+/* ====================== 建立分類列 ====================== */
+const catsEl=$('#cats');
+CATS.forEach((c,i)=>{
   const b=document.createElement('button');
-  b.className='scene'+(i===0?' on':'');
-  b.innerHTML=`<span class="e">${s.e}</span>${s.name}`;
-  b.onclick=()=>{
-    scene=s; grid=s.grid;
-    document.querySelectorAll('.scene').forEach(x=>x.classList.remove('on'));
+  b.className='chip'+(i===0?' on':'');
+  b.innerHTML=`<span class="e">${c.e}</span>${c.name}`;
+  b.onclick=()=>{ cat=c.id;
+    document.querySelectorAll('#cats .chip').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    syncGridMenu();
-    $('#tipText').innerHTML=s.tip;
-    if(s.level) enableLevel();
-  };
-  scenesEl.appendChild(b);
+    buildScenes(); selectScene(SCENES.find(s=>s.cat===cat)); };
+  catsEl.appendChild(b);
 });
-$('#tipText').innerHTML=scene.tip;
 
-/* ---------- 格線選單 ---------- */
+const scenesEl=$('#scenes');
+function buildScenes(){
+  scenesEl.innerHTML='';
+  SCENES.filter(s=>s.cat===cat).forEach(s=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.dataset.id=s.id;
+    b.innerHTML=`<span class="e">${s.e}</span>${s.name}`;
+    b.onclick=()=>selectScene(s);
+    scenesEl.appendChild(b);
+  });
+}
+function selectScene(s){
+  scene=s; grid=s.grid;
+  document.querySelectorAll('#scenes .chip').forEach(x=>x.classList.toggle('on',x.dataset.id===s.id));
+  syncGridMenu();
+  $('#tip').innerHTML=`<div class="h">${s.e} ${s.tip}</div>`+
+    `<ul>${s.cheats.map(c=>`<li>${c}</li>`).join('')}</ul>`;
+  if(s.level) enableLevel();
+  scenesEl.scrollLeft=0;
+}
+buildScenes(); selectScene(SCENES[0]);
+
+/* ====================== 格線選單 ====================== */
 const gridMenu=$('#gridMenu');
 $('#gridBtn').onclick=()=>gridMenu.classList.toggle('show');
 gridMenu.querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ grid=b.dataset.g; syncGridMenu(); gridMenu.classList.remove('show'); };
 });
-function syncGridMenu(){
-  gridMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===grid));
-}
+function syncGridMenu(){ gridMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===grid)); }
 
-/* ---------- 水平儀 ---------- */
+/* ====================== 水平儀 ====================== */
 $('#lvlBtn').onclick=()=>{ levelOn?disableLevel():enableLevel(); };
 function disableLevel(){ levelOn=false; $('#lvlBtn').classList.remove('on'); $('#lvlTxt').textContent='--'; }
 async function enableLevel(){
   if(levelOn) return;
   try{
     if(typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission){
-      const r=await DeviceOrientationEvent.requestPermission();
-      if(r!=='granted') return;
+      const r=await DeviceOrientationEvent.requestPermission(); if(r!=='granted') return;
     }
   }catch(e){}
   window.addEventListener('deviceorientation', onOrient);
   levelOn=true; $('#lvlBtn').classList.add('on');
 }
 function onOrient(ev){
-  beta=ev.beta||0; gamma=ev.gamma||0;
-  // 直拍時的左右傾斜量 ≈ gamma；換算成「離垂直多少度」
-  roll=gamma;
-  let dev = scene.level==='flat'
-      ? Math.round(Math.max(Math.abs(beta),Math.abs(gamma)))   // 俯拍：離水平的最大偏差
-      : Math.round(gamma);                                     // 直拍：左右傾角
+  beta=ev.beta||0; gamma=ev.gamma||0; roll=gamma;
+  let dev = scene.level==='flat' ? Math.round(Math.max(Math.abs(beta),Math.abs(gamma))) : Math.round(gamma);
   $('#lvlTxt').textContent=(dev>0?'+':'')+dev+'°';
   $('#lvlTxt').style.color = Math.abs(dev)<=2 ? 'var(--good)' : (Math.abs(dev)<=6?'#ffd166':'var(--warn)');
 }
 
-/* ---------- 相機 ---------- */
+/* ====================== 相機 ====================== */
 async function startCam(){
   try{
     if(location.protocol==='file:') throw {name:'FileProtocol'};
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'NoCamAPI'};
     const stream=await navigator.mediaDevices.getUserMedia({
       video:{facingMode:{ideal:facing}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
-    video.srcObject=stream;
-    await video.play();
-    $('#gate').classList.remove('show');
-    resize();
-  }catch(err){
-    showGate(err);
-  }
+    video.srcObject=stream; await video.play();
+    $('#gate').classList.remove('show'); resize();
+  }catch(err){ showGate(err); }
 }
-function stopCam(){ if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); } }
-$('#flipBtn').onclick=async()=>{ facing = facing==='environment'?'user':'environment'; stopCam(); await startCam(); };
+function stopCam(){ if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop()); }
+$('#flipBtn').onclick=async()=>{ facing=facing==='environment'?'user':'environment'; stopCam(); await startCam(); };
 
 function showGate(err){
-  const g=$('#gate'); g.classList.add('show');
+  const g=$('#gate'); g.classList.add('show'); $('#gateBtn').textContent='重試';
   if(err && err.name==='NoCamAPI'){
     $('#gateTitle').textContent='這個畫面不能用相機';
-    $('#gateMsg').innerHTML='你現在是在<b>內嵌預覽視窗</b>或非安全環境開啟，瀏覽器不提供相機功能。<br><br>請把檔案放到 <b>HTTPS 網址</b>（GitHub Pages／Netlify），<b>用手機瀏覽器</b>打開那個網址，就能正常開鏡頭。需要我教你部署嗎？';
-    $('#gateBtn').textContent='重試';
+    $('#gateMsg').innerHTML='你現在是在<b>內嵌預覽視窗</b>或非安全環境開啟，瀏覽器不提供相機功能。<br><br>請把檔案放到 <b>HTTPS 網址</b>（GitHub Pages／Netlify），用<b>手機瀏覽器</b>打開那個網址即可。';
   }else if(err && err.name==='FileProtocol'){
     $('#gateTitle').textContent='需要用網址開啟';
-    $('#gateMsg').innerHTML='手機瀏覽器規定：直接點開檔案（file://）不能用相機。<br><br>請把這個檔案放到 <b>HTTPS 網址</b>（例如免費的 GitHub Pages / Netlify），用網址打開、再「加入主畫面」即可離線使用。需要我教你部署嗎？';
-    $('#gateBtn').textContent='重試';
+    $('#gateMsg').innerHTML='手機規定：直接點開檔案（file://）不能用相機。請放到 <b>HTTPS 網址</b>，用網址打開、再「加入主畫面」即可離線使用。';
   }else if(err && (err.name==='NotAllowedError'||err.name==='SecurityError')){
     $('#gateTitle').textContent='相機被拒絕了';
-    $('#gateMsg').innerHTML='請到瀏覽器網址列旁的權限設定，把<b>相機改成允許</b>，再按下方重試。';
-    $('#gateBtn').textContent='重試';
+    $('#gateMsg').innerHTML='請到網址列旁的權限設定，把<b>相機改成允許</b>再重試。';
   }else{
     $('#gateTitle').textContent='開不了相機';
-    $('#gateMsg').innerHTML='可能是裝置沒有相機、或被其他 App 佔用。錯誤："'+(err&&err.name||err)+'"';
-    $('#gateBtn').textContent='重試';
+    $('#gateMsg').innerHTML='可能是裝置沒相機或被其他 App 佔用。錯誤："'+(err&&err.name||err)+'"';
   }
 }
 $('#gateBtn').onclick=startCam;
 
-/* ---------- 畫布尺寸 ---------- */
+/* ====================== 畫布 ====================== */
 function resize(){
   const r=cv.getBoundingClientRect();
   cv.width=r.width*devicePixelRatio; cv.height=r.height*devicePixelRatio;
@@ -251,97 +305,86 @@ function resize(){
 }
 addEventListener('resize',resize);
 
-/* ---------- 繪製輔助線 ---------- */
+/* ====================== 繪製輔助 ====================== */
+function line(a,b,c,d){ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke();}
+function dot(x,y,col){ctx.fillStyle=col||'rgba(255,91,138,.9)';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();}
+function label(t,x,y){ctx.font='600 12px sans-serif';ctx.textBaseline='top';
+  const w=ctx.measureText(t).width+10; ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x,y,w,18);
+  ctx.fillStyle='#fff'; ctx.fillText(t,x+5,y+3);}
+
 function draw(){
   const W=cv.width/devicePixelRatio, H=cv.height/devicePixelRatio;
-  ctx.clearRect(0,0,W,H);
-  ctx.lineWidth=1; ctx.font='600 12px sans-serif'; ctx.textBaseline='top';
+  ctx.clearRect(0,0,W,H); ctx.lineWidth=1;
 
   // 格線
-  ctx.strokeStyle='rgba(255,255,255,.45)';
-  if(grid==='thirds'){
-    for(let i=1;i<3;i++){ line(W*i/3,0,W*i/3,H); line(0,H*i/3,W,H*i/3); }
-    dot(W/3,H/3);dot(2*W/3,H/3);dot(W/3,2*H/3);dot(2*W/3,2*H/3);
-  }else if(grid==='center'){
-    line(W/2,0,W/2,H); line(0,H/2,W,H/2);
-  }else if(grid==='diag'){
-    line(0,0,W,H); line(W,0,0,H);
-  }else if(grid==='phi'){
-    drawPhi(W,H);
-  }
+  ctx.strokeStyle='rgba(255,255,255,.42)';
+  if(grid==='thirds'){ for(let i=1;i<3;i++){line(W*i/3,0,W*i/3,H);line(0,H*i/3,W,H*i/3);}
+    [[1,1],[2,1],[1,2],[2,2]].forEach(p=>dot(W*p[0]/3,H*p[1]/3));
+  }else if(grid==='center'){ line(W/2,0,W/2,H); line(0,H/2,W,H/2);
+  }else if(grid==='diag'){ line(0,0,W,H); line(W,0,0,H); }
 
-  // 場景參考框
+  // 各題材專屬輔助
   if(scene.frame) drawFrame(scene.frame,W,H);
-  if(scene.horizon) drawHorizonHint(W,H);
+  if(scene.horizon) drawHorizon(scene.horizon,W,H);
+  if(scene.sym) drawSym(scene.sym,W,H);
   if(scene.vert) drawVert(W,H);
-
-  // 水平儀
+  if(scene.sun) drawSun(scene.sun,W,H);
+  if(scene.fbox) drawFbox(W,H);
   if(levelOn) drawLevel(W,H);
 
   requestAnimationFrame(draw);
 }
-function line(a,b,c,d){ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke();}
-function dot(x,y){ctx.fillStyle='rgba(255,91,138,.9)';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();}
-function label(t,x,y){ctx.fillStyle='rgba(0,0,0,.55)';const w=ctx.measureText(t).width+10;
-  ctx.fillRect(x,y,w,18);ctx.fillStyle='#fff';ctx.fillText(t,x+5,y+3);}
 
 function drawFrame(type,W,H){
   ctx.save(); ctx.strokeStyle='rgba(255,91,138,.95)'; ctx.lineWidth=2; ctx.setLineDash([8,6]);
-  if(type==='full'){
-    const bw=W*0.42, bx=(W-bw)/2, top=H*0.07, bot=H*0.97;
+  if(type==='full'){ const bw=W*0.42, bx=(W-bw)/2, top=H*0.07, bot=H*0.97;
     ctx.strokeRect(bx,top,bw,bot-top);
     ctx.setLineDash([3,5]); ctx.strokeStyle='rgba(255,255,255,.7)';
-    line(bx,top+ (bot-top)*0.12, bx+bw, top+(bot-top)*0.12); // 頭頂線
-    ctx.restore(); label('頭頂留白', bx, top+2); label('腳要進框', bx, bot-18);
-    return;
-  }
-  if(type==='half'){
-    const bw=W*0.58, bx=(W-bw)/2, top=H*0.10, bot=H*0.80;
-    ctx.strokeRect(bx,top,bw,bot-top);
-    ctx.restore(); label('腰／大腿裁切（別切關節）', bx, bot-18); return;
-  }
-  if(type==='side'){ // 打卡：人佔一側
-    const bw=W*0.42, bx=W*0.04, top=H*0.18, bot=H*0.96;
-    ctx.strokeRect(bx,top,bw,bot-top);
-    ctx.restore(); label('人站這側', bx, top-20); label('另一半留給景 →', bx+bw+8, H*0.5); return;
-  }
+    line(bx,top+(bot-top)*0.12,bx+bw,top+(bot-top)*0.12);
+    ctx.restore(); label('頭頂留白',bx,top+2); label('腳要進框',bx,bot-18); return; }
+  if(type==='half'){ const bw=W*0.58, bx=(W-bw)/2, top=H*0.10, bot=H*0.80;
+    ctx.strokeRect(bx,top,bw,bot-top); ctx.restore(); label('腰／大腿裁切（別切關節）',bx,bot-18); return; }
+  if(type==='face'){ const bw=W*0.56, bh=bw*1.15, bx=(W-bw)/2, top=H*0.16;
+    ctx.strokeRect(bx,top,bw,bh); ctx.setLineDash([3,5]); ctx.strokeStyle='rgba(255,255,255,.7)';
+    line(bx,H/3,bx+bw,H/3); ctx.restore(); label('眼睛放這條線',bx,H/3-20); return; }
+  if(type==='selfie'){ const bw=W*0.74, bh=H*0.5, bx=(W-bw)/2, top=H*0.12;
+    ctx.strokeRect(bx,top,bw,bh); ctx.restore(); label('臉放上半部',bx,top-20); return; }
+  if(type==='group'){ const bw=W*0.9, bh=H*0.42, bx=(W-bw)/2, top=H*0.28;
+    ctx.strokeRect(bx,top,bw,bh); ctx.restore(); label('相機與臉同高，排成微弧形',bx,top-20); return; }
   ctx.restore();
 }
-function drawHorizonHint(W,H){
-  ctx.save(); ctx.strokeStyle='rgba(33,208,122,.85)'; ctx.setLineDash([10,8]); ctx.lineWidth=2;
-  line(0,H*2/3,W,H*2/3); ctx.restore();
-  label('地平線壓這裡（天空多）', 8, H*2/3-20);
+function drawHorizon(pos,W,H){
+  const y = pos==='low' ? H*2/3 : H/3;
+  ctx.save(); ctx.strokeStyle='rgba(33,208,122,.9)'; ctx.setLineDash([10,8]); ctx.lineWidth=2;
+  line(0,y,W,y); ctx.restore();
+  label(pos==='low'?'地平線壓這（天空多）':'地平線壓這（地景多）',8,y-20);
+}
+function drawSym(dir,W,H){
+  ctx.save(); ctx.strokeStyle='rgba(120,180,255,.75)'; ctx.setLineDash([6,7]); ctx.lineWidth=1.5;
+  if(dir==='v'){ line(W/2,0,W/2,H); ctx.restore(); label('左右對稱中線',W/2+6,8); }
+  else{ line(0,H/2,W,H/2); ctx.restore(); label('上下對稱中線',8,H/2+4); }
 }
 function drawVert(W,H){
-  ctx.save(); ctx.strokeStyle='rgba(120,180,255,.8)'; ctx.setLineDash([6,6]);
-  line(W*0.5,0,W*0.5,H); line(W*0.18,0,W*0.18,H); line(W*0.82,0,W*0.82,H);
-  ctx.restore();
+  ctx.save(); ctx.strokeStyle='rgba(120,180,255,.7)'; ctx.setLineDash([6,6]);
+  line(W*0.2,0,W*0.2,H); line(W*0.8,0,W*0.8,H); ctx.restore();
+  label('垂直線對齊這兩條',W*0.2+6,H-26);
 }
-function drawPhi(W,H){
-  // 簡化版黃金螺旋導引（以三分近似 + 螺旋弧）
-  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.4)';
-  let x=0,y=0,w=W,h=H,dir=0; const ratio=0.618;
-  for(let i=0;i<6;i++){
-    let s=Math.min(w,h)*ratio;
-    ctx.beginPath();
-    if(w>=h){
-      if(dir%2===0){ ctx.arc(x+ (i<1?w-s:w-s), y+h, s, -Math.PI/2,0);}
-    }
-    // 退化為簡單對角＋三分，確保可讀
-    break;
-  }
-  // 用穩定的「對角＋三分」替代，避免螺旋畫歪
-  ctx.strokeStyle='rgba(255,255,255,.35)';
-  for(let i=1;i<3;i++){ line(W*i/3,0,W*i/3,H); line(0,H*i/3,W,H*i/3); }
-  ctx.strokeStyle='rgba(255,210,100,.7)'; line(0,0,W,H);
-  ctx.restore();
-  dot(W*0.382,H*0.382);
+function drawSun(pos,W,H){
+  const x = pos.includes('r')?2*W/3:W/3, y=H/3;
+  ctx.save(); ctx.strokeStyle='rgba(255,210,100,.95)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,13,0,7); ctx.stroke();
+  for(let a=0;a<8;a++){const ang=a*Math.PI/4; line(x+Math.cos(ang)*17,y+Math.sin(ang)*17,x+Math.cos(ang)*22,y+Math.sin(ang)*22);}
+  ctx.restore(); label('太陽放這',x+24,y-9);
+}
+function drawFbox(W,H){
+  ctx.save(); ctx.strokeStyle='rgba(255,210,100,.85)'; ctx.lineWidth=2; ctx.setLineDash([10,8]);
+  const m=Math.min(W,H)*0.13; ctx.strokeRect(m,m,W-2*m,H-2*m); ctx.restore();
+  label('用門窗/樹枝填滿外圈，主體放中央',m+4,m-22<0?m+4:m-22);
 }
 function drawLevel(W,H){
   const cx=W/2, cy=H/2;
   if(scene.level==='flat'){
-    // 俯拍氣泡：beta/gamma 越接近 0，泡泡越靠中心
-    const R=46, px=cx+Math.max(-1,Math.min(1,gamma/20))*R, py=cy+Math.max(-1,Math.min(1,beta/20))*R;
+    const R=44, px=cx+Math.max(-1,Math.min(1,gamma/20))*R, py=cy+Math.max(-1,Math.min(1,beta/20))*R;
     const ok=Math.abs(beta)<=3&&Math.abs(gamma)<=3;
     ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
@@ -349,41 +392,31 @@ function drawLevel(W,H){
     ctx.fillStyle=ok?'rgba(33,208,122,.95)':'rgba(255,91,138,.95)';
     ctx.beginPath();ctx.arc(px,py,11,0,7);ctx.fill();
   }else{
-    // 直拍：旋轉的水平線
     const ok=Math.abs(roll)<=2;
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(roll*Math.PI/180);
     ctx.strokeStyle=ok?'rgba(33,208,122,.95)':'rgba(255,91,138,.95)'; ctx.lineWidth=2.5;
     line(-70,0,-18,0); line(18,0,70,0);
-    ctx.fillStyle=ctx.strokeStyle; ctx.beginPath();ctx.arc(0,0,3,0,7);ctx.fill();
-    ctx.restore();
-    // 固定中央基準
+    ctx.fillStyle=ctx.strokeStyle; ctx.beginPath();ctx.arc(0,0,3,0,7);ctx.fill(); ctx.restore();
     ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=1; line(cx-12,cy,cx+12,cy);
   }
 }
 
-/* ---------- 拍照（存乾淨原圖，不含輔助線） ---------- */
+/* ====================== 拍照（乾淨原圖） ====================== */
 $('#shot').onclick=()=>{
   if(!video.videoWidth) return;
-  const c=document.createElement('canvas');
-  c.width=video.videoWidth; c.height=video.videoHeight;
+  const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
   const x=c.getContext('2d');
-  if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); } // 前鏡頭鏡像修正
+  if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); }
   x.drawImage(video,0,0,c.width,c.height);
   const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60);
-  c.toBlob(b=>{
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(b);
-    a.download='photo_'+Date.now()+'.jpg'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+  c.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='photo_'+Date.now()+'.jpg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),3000);
   },'image/jpeg',0.95);
 };
 
-/* ---------- 說明 ---------- */
-$('#helpBtn').onclick=()=>{
-  alert('男友救星 · 構圖教練\n\n1. 下排選「場景」→ 自動套上對應參考框與口訣\n2. 右上「格線」可換三分/中心/對角\n3. 右上「水平」開啟後別讓數字超過 ±2°（綠色）就不會拍歪\n4. 中央大圓鈕拍照，會存「乾淨原圖」到相簿/下載\n\n口訣：人放三分線、腳要進框、相機放低、別拍歪。');
-};
+$('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 下排先選大類（人像/風景/花季/建築/美食/寵物），再選上排的題材\n2. 畫面會疊上該題材專屬的參考框＋機位口訣\n3. 右上「水平」開啟後，數字保持在 ±2°（綠色）就不會拍歪\n4. 中央大圓鈕拍照，存的是乾淨原圖（不含輔助線）\n\n核心口訣：人放三分線、腳要進框、相機放低、別拍歪。'); };
 
-/* ---------- 啟動 ---------- */
+/* ====================== 啟動 ====================== */
 syncGridMenu(); resize(); draw(); startCam();
 document.addEventListener('click',()=>{ if(!levelOn && scene.level) enableLevel(); },{once:true});
 </script>
