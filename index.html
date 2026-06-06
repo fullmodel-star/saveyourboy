@@ -195,7 +195,6 @@
 
 <div class="sheet" id="sheet">
   <div class="grab" id="sheetClose"></div>
-  <div class="row figrow" id="figRow"></div>
   <div class="vnav">
     <button id="vPrev" aria-label="上一種構圖">‹</button>
     <div class="vname" id="vName"></div>
@@ -548,15 +547,6 @@ CATS.forEach((c,i)=>{
     document.querySelectorAll('#cats .chip').forEach(x=>x.classList.toggle('on',x.dataset.id===c.id));
     buildScenes(); selectScene(SCENES.find(s=>s.cat===cat)); };
   catsEl.appendChild(b);
-});
-
-/* 人形樣式切換 */
-const FIGSTYLES=[{id:'silhouette',name:'優雅'},{id:'line',name:'線條'},{id:'frame',name:'框框'}];
-const figRow=$('#figRow');
-FIGSTYLES.forEach(s=>{ const b=document.createElement('button'); b.className='chip'+(s.id===figStyle?' on':''); b.dataset.fs=s.id;
-  b.innerHTML=`<span class="e">👤</span>${s.name}`;
-  b.onclick=()=>{ figStyle=s.id; figRow.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.fs===s.id)); };
-  figRow.appendChild(b);
 });
 
 /* 滑出面板開關 */
