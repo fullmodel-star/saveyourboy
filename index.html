@@ -194,6 +194,7 @@
 
 <div class="sheet" id="sheet">
   <div class="grab" id="sheetClose"></div>
+  <div class="row figrow" id="figRow"></div>
   <div class="vnav">
     <button id="vPrev" aria-label="上一種構圖">‹</button>
     <div class="vname" id="vName"></div>
@@ -508,6 +509,7 @@ let cat='people';
 let scene=SCENES[0];
 let vi=0;
 let grid='thirds';
+let figStyle='silhouette';   // 'silhouette' 優雅 | 'line' 線條 | 'frame' 框框
 let levelMode=null;
 let levelOn=false, facing='environment', zen=false;
 let roll=0, beta=0, gamma=0;
@@ -521,6 +523,15 @@ CATS.forEach((c,i)=>{
     document.querySelectorAll('#cats .chip').forEach(x=>x.classList.toggle('on',x.dataset.id===c.id));
     buildScenes(); selectScene(SCENES.find(s=>s.cat===cat)); };
   catsEl.appendChild(b);
+});
+
+/* 人形樣式切換 */
+const FIGSTYLES=[{id:'silhouette',name:'優雅'},{id:'line',name:'線條'},{id:'frame',name:'框框'}];
+const figRow=$('#figRow');
+FIGSTYLES.forEach(s=>{ const b=document.createElement('button'); b.className='chip'+(s.id===figStyle?' on':''); b.dataset.fs=s.id;
+  b.innerHTML=`<span class="e">👤</span>${s.name}`;
+  b.onclick=()=>{ figStyle=s.id; figRow.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.fs===s.id)); };
+  figRow.appendChild(b);
 });
 
 /* 滑出面板開關 */
@@ -790,22 +801,40 @@ function drawVariant(v,W,H){
 }
 
 function drawFig(cx,by,h){
-  // 可愛女生剪影：頭髮＋側馬尾＋臉＋A-line 洋裝＋腿
-  const r=h*0.07, topY=by-h, hcy=topY+r*1.15;
-  const shoulderY=hcy+r*1.15, hemY=topY+h*0.52, hemW=h*0.092;
-  ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round';
-  ctx.lineWidth=Math.max(2,h*0.01); ctx.strokeStyle='rgba(255,91,138,.92)';
-  ctx.fillStyle='rgba(255,91,138,.3)';                                  // 側馬尾
-  ctx.beginPath(); ctx.ellipse(cx+r*0.95,hcy-r*0.15,r*0.4,r*0.7,0.35,0,7); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,hcy,r*1.22,0,7); ctx.fill();              // 頭髮
-  ctx.fillStyle='rgba(255,210,218,.5)';                                // 臉
-  ctx.beginPath(); ctx.arc(cx,hcy,r,0,7); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx,hcy,r*1.22,Math.PI*0.08,Math.PI*0.92,false); ctx.stroke();
-  ctx.fillStyle='rgba(255,91,138,.2)';                                 // 洋裝
-  ctx.beginPath(); ctx.moveTo(cx-r*0.5,shoulderY); ctx.lineTo(cx+r*0.5,shoulderY);
-  ctx.lineTo(cx+hemW,hemY); ctx.lineTo(cx-hemW,hemY); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx-hemW*0.5,hemY); ctx.lineTo(cx-hemW*0.55,by);   // 腿
-                   ctx.moveTo(cx+hemW*0.5,hemY); ctx.lineTo(cx+hemW*0.55,by); ctx.stroke();
+  if(figStyle==='frame'){ drawFigFrame(cx,by,h); return; }
+  const line=(figStyle==='line');
+  const topY=by-h, r=h*0.066, hcy=topY+r;
+  const shY=hcy+r*1.15, waistY=topY+h*0.42, hipY=topY+h*0.53;
+  const shW=h*0.10, waW=h*0.062, hemW=h*0.15;
+  ctx.save(); ctx.lineJoin='round';
+  ctx.shadowColor='rgba(255,255,255,.45)'; ctx.shadowBlur=h*0.016;
+  ctx.fillStyle='rgba(255,255,255,.16)';
+  ctx.strokeStyle = line ? 'rgba(255,150,180,.96)' : 'rgba(255,255,255,.95)';
+  ctx.lineWidth=Math.max(1.5, h*(line?0.009:0.0072));
+  // 平滑身形剪影（肩→腰→裙襬）
+  ctx.beginPath();
+  ctx.moveTo(cx-shW, shY);
+  ctx.bezierCurveTo(cx-shW*1.02, shY+(waistY-shY)*0.55, cx-waW, waistY-(waistY-shY)*0.15, cx-waW, waistY);
+  ctx.bezierCurveTo(cx-waW, hipY, cx-hemW, by-(by-hipY)*0.35, cx-hemW, by);
+  ctx.lineTo(cx+hemW, by);
+  ctx.bezierCurveTo(cx+hemW, by-(by-hipY)*0.35, cx+waW, hipY, cx+waW, waistY);
+  ctx.bezierCurveTo(cx+waW, waistY-(waistY-shY)*0.15, cx+shW*1.02, shY+(waistY-shY)*0.55, cx+shW, shY);
+  ctx.quadraticCurveTo(cx, shY-h*0.026, cx-shW, shY);
+  ctx.closePath();
+  if(!line) ctx.fill(); ctx.stroke();
+  // 頭
+  ctx.beginPath(); ctx.arc(cx,hcy,r,0,7); if(!line) ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.restore();
+  tag('人放這', cx-22, Math.max(2,topY-22));
+}
+function drawFigFrame(cx,by,h){
+  const topY=by-h, r=h*0.058, hcy=topY+r;
+  const bw=h*0.33, bx=cx-bw/2, bodyTop=hcy+r*1.35;
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.fillStyle='rgba(255,255,255,.07)'; ctx.lineWidth=2;
+  ctx.setLineDash([9,6]);
+  if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx,bodyTop,bw,by-bodyTop,14); ctx.fill(); ctx.stroke(); }
+  else { ctx.fillRect(bx,bodyTop,bw,by-bodyTop); ctx.strokeRect(bx,bodyTop,bw,by-bodyTop); }
+  ctx.setLineDash([]); ctx.beginPath(); ctx.arc(cx,hcy,r,0,7); ctx.stroke();
   ctx.restore();
   tag('人放這', cx-22, Math.max(2,topY-22));
 }
