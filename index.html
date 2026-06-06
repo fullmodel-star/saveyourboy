@@ -20,6 +20,9 @@
   #stage{position:fixed; inset:0; background:#000;}
   video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
   canvas{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+  /* 原生 App：相機由 camera-preview 鋪在 webview 後面，畫面要透明 */
+  body.native, body.native #stage{background:transparent !important;}
+  body.native #cam{display:none !important;}
 
   .top{position:absolute; top:0; left:0; right:0; padding:max(10px,env(safe-area-inset-top)) 12px 10px;
     display:flex; align-items:center; gap:7px; z-index:5; background:linear-gradient(#000a,#0000); pointer-events:none;}
@@ -576,6 +579,16 @@ function onOrient(ev){
 
 /* ====================== 相機 ====================== */
 let starting=false;
+// 原生 App（Capacitor）偵測 —— 網頁版 isNative=false，走原本 getUserMedia
+const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+function cpPlugin(){ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CameraPreview) || null; }
+async function startCamNative(){
+  const cp=cpPlugin(); if(!cp) throw {name:'NoCamAPI'};
+  document.body.classList.add('native');
+  try{ await cp.stop(); }catch(e){}
+  await cp.start({ position: facing==='user'?'front':'rear', toBack:true, disableAudio:true,
+    width: Math.round(window.innerWidth), height: Math.round(window.innerHeight) });
+}
 async function getStream(){
   try{ return await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}, width:{ideal:3840}, height:{ideal:2160}}, audio:false}); }
   catch(e){ if(e && (e.name==='OverconstrainedError'||e.name==='NotFoundError'||e.name==='NotReadableError'))
@@ -584,18 +597,26 @@ async function getStream(){
 async function startCam(){
   if(starting) return; starting=true;
   try{
-    if(location.protocol==='file:') throw {name:'FileProtocol'};
-    if(!isSecureContext) throw {name:'Insecure'};
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'NoCamAPI'};
-    stopCam();
-    const stream=await getStream();
-    video.srcObject=stream; video.setAttribute('playsinline',''); video.muted=true;
-    await video.play();
+    if(isNative){ await startCamNative(); }
+    else {
+      if(location.protocol==='file:') throw {name:'FileProtocol'};
+      if(!isSecureContext) throw {name:'Insecure'};
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'NoCamAPI'};
+      await stopCam();
+      const stream=await getStream();
+      video.srcObject=stream; video.setAttribute('playsinline',''); video.muted=true;
+      await video.play();
+    }
     $('#gate').classList.remove('show'); resize();
   }catch(err){ showGate(err); } finally{ starting=false; }
 }
-function stopCam(){ if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; } }
-$('#flipBtn').onclick=async()=>{ facing=facing==='environment'?'user':'environment'; await startCam(); };
+async function stopCam(){
+  if(isNative){ const cp=cpPlugin(); if(cp){ try{ await cp.stop(); }catch(e){} } return; }
+  if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; }
+}
+$('#flipBtn').onclick=async()=>{ facing=facing==='environment'?'user':'environment';
+  if(isNative){ const cp=cpPlugin(); try{ await cp.flip(); }catch(e){ await startCam(); } }
+  else { await startCam(); } };
 
 function showStart(){
   const g=$('#gate'); g.classList.add('show');
@@ -729,20 +750,25 @@ function drawLevel(W,H){
 
 /* ====================== 拍照（最高畫質 + 分享/儲存） ====================== */
 async function capture(){
-  if(!video.videoWidth) return;
   let blob=null;
-  // Android Chrome：用 ImageCapture 拍更高畫質的靜照
-  const track = video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0];
-  if(track && window.ImageCapture){
-    try{ blob = await new ImageCapture(track).takePhoto(); }catch(e){ blob=null; }
-  }
-  // 後備：擷取目前畫面（以串流最高畫質）
-  if(!blob){
-    const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
-    const x=c.getContext('2d');
-    if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); }
-    x.drawImage(video,0,0,c.width,c.height);
-    blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
+  if(isNative){
+    const cp=cpPlugin();
+    try{ const r=await cp.capture({quality:92}); blob=await (await fetch('data:image/jpeg;base64,'+r.value)).blob(); }catch(e){ blob=null; }
+  } else {
+    if(!video.videoWidth) return;
+    // Android Chrome：用 ImageCapture 拍更高畫質的靜照
+    const track = video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0];
+    if(track && window.ImageCapture){
+      try{ blob = await new ImageCapture(track).takePhoto(); }catch(e){ blob=null; }
+    }
+    // 後備：擷取目前畫面（以串流最高畫質）
+    if(!blob){
+      const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
+      const x=c.getContext('2d');
+      if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); }
+      x.drawImage(video,0,0,c.width,c.height);
+      blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
+    }
   }
   if(!blob) return;
   const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60);

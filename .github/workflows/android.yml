@@ -1,0 +1,68 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Assemble web assets (www/)
+        run: |
+          rm -rf www && mkdir -p www
+          cp index.html www/
+          cp manifest.webmanifest www/ 2>/dev/null || true
+          cp sw.js www/ 2>/dev/null || true
+          cp icon-*.png www/ 2>/dev/null || true
+          ls -la www
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Add camera permission to manifest
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          if ! grep -q 'android.permission.CAMERA' "$M"; then
+            sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application#' "$M"
+          fi
+          cat "$M"
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: 男友救星-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

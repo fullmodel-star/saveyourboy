@@ -1,0 +1,14 @@
+{
+  "name": "saveyourboy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "男友救星 · 構圖教練 — Capacitor 原生殼",
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor-community/camera-preview": "^6.0.0"
+  }
+}
