@@ -55,6 +55,7 @@
   .tipbody b{color:var(--accent);}
   .setline{margin-top:5px; padding-top:5px; border-top:1px solid #ffffff1a; font-size:12px; line-height:1.5; opacity:.95;}
   .setline b{color:var(--gold);}
+  #poseLine b{color:#8fd0ff;}
 
   .scenebar{display:flex; align-items:center; gap:7px; padding:0 12px 8px;}
   .catbtn{flex:0 0 auto; background:#ffffff24; border:1px solid #ffffff44; color:#fff;
@@ -203,6 +204,7 @@
   <div class="dots" id="vDots"></div>
   <div class="tipbody" id="tipBody"></div>
   <div class="setline" id="setLine"></div>
+  <div class="setline" id="poseLine"></div>
   <div class="row cats" id="cats"></div>
   <div class="row scenes" id="scenes"></div>
 </div>
@@ -504,6 +506,29 @@ const SCENES=[
  ]},
 ];
 
+/* ====================== 擺姿建議（依題材名對照） ====================== */
+const POSES={
+  '全身顯高':'重心放<b>後腳</b>、前腳尖點地；一手插口袋或撥髮、身體側 15° 顯瘦',
+  '半身':'手輕碰<b>下巴/鎖骨</b>或撩髮；肩膀放鬆下沉，眼神看鏡頭外更自然',
+  '臉部特寫':'微抬下巴、<b>舌頂上顎</b>修下顎線；眼睛看鏡頭或斜上方',
+  '情侶自拍':'頭靠近<b>臉貼臉</b>；一個比愛心、一個看對方笑',
+  '多人合照':'<b>高低錯落</b>、肩膀稍側；手搭肩或比同一手勢更整齊',
+  '逆光人像':'<b>撥髮、轉身回眸</b>；手舉起遮陽順便帶出身形線條',
+  '穿搭 OOTD':'走路抓拍、回頭看；<b>重心單腳</b>、手提包或拉外套展示細節',
+  '海邊夕陽人像':'赤腳<b>走向海、撩髮、張開雙手</b>；或背對牽手看夕陽',
+  '寵物':'蹲下與牠平視；<b>零食/玩具放鏡頭旁</b>，等牠看過來再拍',
+  '小孩':'蹲到視線高、<b>叫名字或扮鬼臉</b>，抓自然笑容別硬擺',
+  '婚紗':'<b>額頭相靠閉眼、牽手轉圈</b>、新郎從後輕抱；手放自然別僵',
+  '孕婦':'<b>雙手托肚、側身秀曲線</b>；眼神溫柔看肚子或鏡頭',
+  '新生兒':'趁睡著拍；<b>輕握小手、親額頭</b>等互動，動作輕柔安靜',
+  '全家福':'靠近、身體微朝中心；<b>孩子抱前面或牽手</b>，自然互看笑',
+  '畢業照':'<b>拋帽、舉證書、跳起</b>；或回頭笑、抱著書本',
+  '全身鏡自拍':'身體側站、<b>一腳在前</b>；手機略低，另一手插腰或撥髮',
+  '背影殺':'<b>回頭半側臉、撩髮</b>；緩步走動讓裙擺/頭髮飄起',
+  '跳拍':'<b>開合跳、踢腿</b>或牽手一起跳；數 3、2、1 在最高點按連拍',
+  '健身房動態':'動作中段<b>定格、繃緊核心</b>；側身展現線條，眼神有力',
+};
+
 /* ====================== 狀態 ====================== */
 let cat='people';
 let scene=SCENES[0];
@@ -562,6 +587,9 @@ function renderVariant(){
   $('#vName').innerHTML=`<span class="e">${scene.e}</span>${v.n}`;
   $('#tipBody').innerHTML=`💡 ${v.t}`;
   $('#setLine').innerHTML=`📷 ${scene.set}`;
+  const pose=POSES[scene.name];
+  $('#poseLine').innerHTML = pose ? `🤳 ${pose}` : '';
+  $('#poseLine').style.display = pose ? '' : 'none';
   $('#vDots').innerHTML=scene.v.map((_,i)=>`<i class="${i===vi?'on':''}"></i>`).join('');
   $('#curScene').textContent=`${scene.e} ${scene.name}`;
   $('#curVar').textContent=v.n;
