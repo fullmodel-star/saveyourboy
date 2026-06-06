@@ -89,6 +89,24 @@
   .grids button{background:none; border:none; color:#fff; text-align:left; padding:9px 12px; border-radius:9px; font-size:14px;}
   .grids button.on{background:var(--accent);}
 
+  .vig{position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .2s;
+    background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.6) 100%);}
+  .vig.on{opacity:1;}
+  body.native .vig{display:none;}
+
+  .pro{position:absolute; right:12px; top:54px; z-index:7; display:none; flex-direction:column; gap:9px;
+    background:rgba(20,20,20,.95); backdrop-filter:blur(10px); border:1px solid #ffffff1f; border-radius:14px;
+    padding:12px; min-width:215px; max-width:82vw;}
+  .pro.show{display:flex;}
+  .pro .ctl{display:flex; flex-direction:column; gap:4px;}
+  .pro .ctl label{font-size:12.5px; display:flex; justify-content:space-between; opacity:.95;}
+  .pro input[type=range]{width:100%; accent-color:var(--accent);}
+  .pro .tog{background:var(--chip); border:none; color:#fff; border-radius:9px; padding:9px; font-size:13px; text-align:left;}
+  .pro .tog.on{background:var(--accent);}
+  .pro .tog:disabled{opacity:.45;}
+  .pro .note{font-size:12px; opacity:.8; line-height:1.6;}
+  .pro .note b{color:var(--accent);}
+
   .gate{position:absolute; inset:0; z-index:20; background:#0c0c0c; display:none;
     flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px;}
   .gate.show{display:flex;}
@@ -141,12 +159,15 @@
 <body>
 <div id="stage">
   <video id="cam" autoplay playsinline muted></video>
+  <div class="vig" id="vig"></div>
   <canvas id="overlay"></canvas>
 </div>
 
 <div class="top">
   <div class="brand">男友救星 <small>· 構圖教練</small></div>
   <div class="spacer"></div>
+  <button class="tbtn" id="filtBtn">🎨</button>
+  <button class="tbtn" id="proBtn">⚙</button>
   <button class="tbtn" id="lvlBtn">⊿ <span class="lvlnum" id="lvlTxt">--</span></button>
   <button class="tbtn" id="gridBtn">▦</button>
 </div>
@@ -157,6 +178,8 @@
   <button data-g="diag">✕ 對角線</button>
   <button data-g="off">○ 不顯示</button>
 </div>
+<div class="grids" id="filtMenu"></div>
+<div class="pro" id="proMenu"></div>
 
 <div class="backdrop" id="backdrop"></div>
 
@@ -545,11 +568,87 @@ document.addEventListener('touchend',e=>{ if(tsx==null) return; const dx=e.chang
   if(Math.abs(dx)>55) changeVariant(dx<0?1:-1); tsx=null; },{passive:true});
 
 /* ====================== 格線選單 ====================== */
-$('#gridBtn').onclick=()=>gridMenu.classList.toggle('show');
+const filtMenu=$('#filtMenu'), proMenu=$('#proMenu'), vig=$('#vig');
+function closePops(){ [gridMenu,filtMenu,proMenu].forEach(m=>m.classList.remove('show')); }
+function togglePop(m){ const o=m.classList.contains('show'); closePops(); if(!o) m.classList.add('show'); }
+$('#gridBtn').onclick=()=>togglePop(gridMenu);
 gridMenu.querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ grid=b.dataset.g; syncGridMenu(); gridMenu.classList.remove('show'); };
 });
 function syncGridMenu(){ gridMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===grid)); }
+
+/* ====================== 濾鏡 ====================== */
+const FILTERS=[
+  {id:'none', name:'原色',     css:'none'},
+  {id:'jp',   name:'清新日系', css:'brightness(1.08) contrast(.93) saturate(1.06)'},
+  {id:'warm', name:'暖陽',     css:'brightness(1.05) saturate(1.18) sepia(.18) hue-rotate(-8deg)'},
+  {id:'cine', name:'電影感',   css:'contrast(1.18) saturate(1.05) brightness(.97) sepia(.08)', vig:1},
+  {id:'bw',   name:'黑白',     css:'grayscale(1) contrast(1.1) brightness(1.02)'},
+  {id:'retro',name:'復古底片', css:'sepia(.4) saturate(1.25) contrast(1.05) brightness(1.05)', vig:1},
+];
+let currentFilter='none';
+function curF(){ return FILTERS.find(f=>f.id===currentFilter)||FILTERS[0]; }
+function applyLiveFilter(){ const f=curF(); video.style.filter = (f.css==='none'?'':f.css); vig.classList.toggle('on', !!f.vig); }
+FILTERS.forEach(f=>{ const b=document.createElement('button'); b.dataset.id=f.id; b.textContent=f.name;
+  if(f.id===currentFilter) b.classList.add('on');
+  b.onclick=()=>{ currentFilter=f.id; applyLiveFilter();
+    filtMenu.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.id===f.id));
+    filtMenu.classList.remove('show'); };
+  filtMenu.appendChild(b);
+});
+$('#filtBtn').onclick=()=>togglePop(filtMenu);
+function drawVignette(x,w,h){ const g=x.createRadialGradient(w/2,h/2,Math.min(w,h)*0.32, w/2,h/2,Math.max(w,h)*0.72);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.55)'); x.fillStyle=g; x.fillRect(0,0,w,h); }
+async function applyFilterToBlob(blob){ // 把濾鏡烘進照片
+  const f=curF(); if(f.id==='none') return blob;
+  try{
+    const img=await createImageBitmap(blob);
+    const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d');
+    x.filter=f.css; x.drawImage(img,0,0); x.filter='none';
+    if(f.vig) drawVignette(x,c.width,c.height);
+    return await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
+  }catch(e){ return blob; }
+}
+
+/* ====================== Pro 手動控制（依裝置支援顯示） ====================== */
+let camTrack=null, camCaps=null;
+$('#proBtn').onclick=()=>{ buildPro(); togglePop(proMenu); };
+function setCon(adv){ if(!camTrack) return; try{ camTrack.applyConstraints({advanced:[adv]}); }catch(e){} }
+function proSlider(label, cap, key){
+  const w=document.createElement('div'); w.className='ctl';
+  const lab=document.createElement('label'); const val=document.createElement('span');
+  lab.append(document.createTextNode(label)); lab.appendChild(val);
+  const r=document.createElement('input'); r.type='range';
+  r.min=cap.min; r.max=cap.max; r.step=cap.step||((cap.max-cap.min)/100)||0.1;
+  let init = camTrack.getSettings ? camTrack.getSettings()[key] : cap.min; if(init==null) init=cap.min;
+  r.value=init; val.textContent=(+r.value).toFixed(key==='zoom'?1:1);
+  r.oninput=()=>{ val.textContent=(+r.value).toFixed(1); const a={}; a[key]=+r.value; setCon(a); };
+  w.appendChild(lab); w.appendChild(r); proMenu.appendChild(w);
+}
+function proToggle(label, onChange){
+  const b=document.createElement('button'); b.className='tog'; let on=false;
+  b.textContent=label+'：關'; b.onclick=()=>{ on=!on; b.textContent=label+'：'+(on?'開':'關'); b.classList.toggle('on',on); onChange(on); };
+  proMenu.appendChild(b);
+}
+function proFocus(modes){
+  const lock = modes.includes('manual')?'manual':(modes.includes('single-shot')?'single-shot':null);
+  const cont = modes.includes('continuous')?'continuous':modes[0];
+  const b=document.createElement('button'); b.className='tog'; let locked=false;
+  if(!lock){ b.disabled=true; b.textContent='對焦鎖定：此機不支援'; }
+  else { b.textContent='對焦：自動'; b.onclick=()=>{ locked=!locked; b.textContent='對焦：'+(locked?'🔒鎖定':'自動'); b.classList.toggle('on',locked); setCon({focusMode: locked?lock:cont}); }; }
+  proMenu.appendChild(b);
+}
+function buildPro(){
+  proMenu.innerHTML='';
+  if(isNative){ proMenu.innerHTML='<div class="note">手動控制(變焦/補光/EV/對焦)目前在<b>網頁版</b>可用；App 原生版稍後加。</div>'; return; }
+  if(!camTrack || !camCaps){ proMenu.innerHTML='<div class="note">相機尚未啟動，或此瀏覽器/裝置不開放手動控制。</div>'; return; }
+  let any=false;
+  if(camCaps.zoom){ any=true; proSlider('🔍 變焦', camCaps.zoom, 'zoom'); }
+  if(camCaps.exposureCompensation){ any=true; proSlider('☀ EV 曝光', camCaps.exposureCompensation, 'exposureCompensation'); }
+  if(camCaps.torch){ any=true; proToggle('🔦 補光手電筒', (on)=>setCon({torch:on})); }
+  if(camCaps.focusMode && camCaps.focusMode.length>1){ any=true; proFocus(camCaps.focusMode); }
+  if(!any){ proMenu.innerHTML='<div class="note">你的手機/瀏覽器沒開放手動控制 API（<b>iPhone 多半不支援</b>）。曝光請用相機點畫面後上下滑。</div>'; }
+}
 
 /* ====================== 水平儀 ====================== */
 $('#lvlBtn').onclick=()=>{ levelOn?disableLevel():enableLevel(); };
@@ -606,8 +705,11 @@ async function startCam(){
       const stream=await getStream();
       video.srcObject=stream; video.setAttribute('playsinline',''); video.muted=true;
       await video.play();
+      camTrack = stream.getVideoTracks()[0];
+      try{ camCaps = camTrack.getCapabilities ? camTrack.getCapabilities() : null; }catch(e){ camCaps=null; }
     }
     $('#gate').classList.remove('show'); resize();
+    applyLiveFilter(); buildPro();
   }catch(err){ showGate(err); } finally{ starting=false; }
 }
 async function stopCam(){
@@ -771,6 +873,7 @@ async function capture(){
     }
   }
   if(!blob) return;
+  blob=await applyFilterToBlob(blob);            // 把目前濾鏡烘進照片
   const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60);
   const file=new File([blob],'男友救星_'+Date.now()+'.jpg',{type:blob.type||'image/jpeg'});
   // 分享/儲存面板（可存到相簿或傳給別人）
