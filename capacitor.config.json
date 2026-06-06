@@ -6,6 +6,7 @@
     "backgroundColor": "#00000000"
   },
   "plugins": {
-    "CameraPreview": {}
+    "CameraPreview": {},
+    "Media": {}
   }
 }

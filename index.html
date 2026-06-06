@@ -155,6 +155,59 @@
     .side{width:44px; height:44px; font-size:18px;}
     .pickpill{padding:6px 13px; font-size:12px;}
   }
+
+  /* AI 即時構圖提示列 */
+  .aibar{position:fixed; left:50%; top:calc(52px + env(safe-area-inset-top)); transform:translateX(-50%) translateY(-6px);
+    z-index:6; max-width:92vw; padding:9px 16px; border-radius:999px; font-size:14px; font-weight:700;
+    background:rgba(255,91,138,.92); color:#fff; backdrop-filter:blur(8px); box-shadow:0 4px 16px #0007;
+    display:none; align-items:center; gap:6px; white-space:nowrap; pointer-events:none;
+    transition:background .2s, opacity .2s, transform .2s;}
+  .aibar.show{display:flex; transform:translateX(-50%) translateY(0);}
+  .aibar.ok{background:rgba(33,208,122,.94);}
+  .aibar.load{background:rgba(40,40,40,.92);}
+
+  /* 存檔提示 toast */
+  .toast{position:fixed; left:50%; bottom:calc(118px + env(safe-area-inset-bottom)); transform:translate(-50%,8px);
+    z-index:25; background:rgba(20,20,20,.92); backdrop-filter:blur(8px); border:1px solid #ffffff22;
+    color:#fff; font-size:13px; font-weight:600; padding:9px 15px; border-radius:999px;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; white-space:nowrap;}
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+  .toast b{color:var(--good);}
+
+  /* 相本縮圖鈕（網頁備援） */
+  .rollbtn{position:fixed; left:18px; bottom:calc(28px + env(safe-area-inset-bottom)); z-index:7;
+    width:50px; height:50px; border-radius:13px; border:2px solid #fff9; background:#222;
+    overflow:hidden; padding:0; display:none;}
+  .rollbtn.show{display:block;}
+  .rollbtn img{width:100%; height:100%; object-fit:cover; display:block;}
+  .rollbtn .cnt{position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px;
+    border-radius:999px; background:var(--accent); color:#fff; font-size:11px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #000;}
+
+  /* 相本檢視 */
+  .gallery{position:fixed; inset:0; z-index:22; background:#0c0c0c; display:none; flex-direction:column;}
+  .gallery.show{display:flex;}
+  .ghead{display:flex; align-items:center; gap:8px; padding:max(10px,env(safe-area-inset-top)) 14px 10px;}
+  .ghead .gt{font-weight:800; font-size:16px;}
+  .ghead .gt small{font-weight:500; opacity:.6; margin-left:4px;}
+  .ghead .spacer{flex:1;}
+  .ghead button{background:var(--chip); border:none; color:#fff; border-radius:999px; padding:8px 13px; font-size:13px; font-weight:700;}
+  .ghead button.prim{background:var(--accent);}
+  .ggrid{flex:1; overflow-y:auto; display:grid; grid-template-columns:repeat(3,1fr); gap:3px; padding:3px 3px 14px;}
+  .gcell{position:relative; aspect-ratio:1; background:#1a1a1a; overflow:hidden;}
+  .gcell img{width:100%; height:100%; object-fit:cover; display:block;}
+  .gempty{flex:1; display:flex; align-items:center; justify-content:center; text-align:center; opacity:.6; font-size:14px; padding:30px; line-height:1.8;}
+  /* 單張預覽 */
+  .gview{position:absolute; inset:0; z-index:23; background:#000; display:none; flex-direction:column;}
+  .gview.show{display:flex;}
+  .gview .pic{flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .gview .pic img{max-width:100%; max-height:100%; object-fit:contain;}
+  .gview .acts{display:flex; gap:10px; justify-content:center; padding:14px 14px max(18px,env(safe-area-inset-bottom));}
+  .gview .acts button{flex:1; max-width:130px; background:var(--chip); border:none; color:#fff; border-radius:12px; padding:13px; font-size:14px; font-weight:700;}
+  .gview .acts button.prim{background:var(--accent);}
+  .gview .acts button.del{background:#ffffff14; color:#ff8a8a;}
+  .gview .gclose{position:absolute; top:max(10px,env(safe-area-inset-top)); left:14px; z-index:2;
+    background:rgba(0,0,0,.5); border:none; color:#fff; border-radius:999px; width:38px; height:38px; font-size:20px;}
 </style>
 </head>
 <body>
@@ -167,6 +220,7 @@
 <div class="top">
   <div class="brand">男友救星 <small>· 構圖教練</small></div>
   <div class="spacer"></div>
+  <button class="tbtn" id="aiBtn">🤖 AI</button>
   <button class="tbtn" id="filtBtn">🎨</button>
   <button class="tbtn" id="proBtn">⚙</button>
   <button class="tbtn" id="lvlBtn">⊿ <span class="lvlnum" id="lvlTxt">--</span></button>
@@ -215,6 +269,33 @@
   <button id="gateBtn">允許並開始</button>
 </div>
 <div class="flash" id="flash"></div>
+<div class="aibar" id="aiBar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- 相本縮圖鈕（網頁備援用） -->
+<button class="rollbtn" id="rollBtn"><img id="rollThumb" alt="相本"><span class="cnt" id="rollCnt">0</span></button>
+
+<!-- App 內相本 -->
+<div class="gallery" id="gallery">
+  <div class="ghead">
+    <div class="gt">相本 <small id="gCount"></small></div>
+    <div class="spacer"></div>
+    <button id="gSaveAll" class="prim">存到相簿</button>
+    <button id="gClear">清空</button>
+    <button id="gClose">關閉</button>
+  </div>
+  <div class="ggrid" id="gGrid"></div>
+  <div class="gempty" id="gEmpty">還沒有照片<br>拍幾張就會出現在這裡</div>
+  <!-- 單張預覽 -->
+  <div class="gview" id="gView">
+    <button class="gclose" id="gvBack">‹</button>
+    <div class="pic"><img id="gvImg" alt="預覽"></div>
+    <div class="acts">
+      <button class="prim" id="gvSave">存到相簿／分享</button>
+      <button class="del" id="gvDel">刪除</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -617,7 +698,7 @@ buildScenes(); selectScene(SCENES[0]);
 /* 左右滑動切換變體（只在乾淨拍攝畫面有效，面板/按鈕上不觸發） */
 let tsx=null, tsy=null, suppressClick=false;
 function vw(){ return Math.max(window.innerWidth||0, document.documentElement.clientWidth||0, 320); }
-function inUI(t){ return t && t.closest && t.closest('.sheet,.shootrow,.pickpill,.grids,.pro,.gate,.top,.backdrop'); }
+function inUI(t){ return t && t.closest && t.closest('.sheet,.shootrow,.pickpill,.grids,.pro,.gate,.top,.backdrop,.gallery,.rollbtn,.toast'); }
 document.addEventListener('touchstart',e=>{ if(inUI(e.target)){tsx=null; return;} tsx=e.touches[0].clientX; tsy=e.touches[0].clientY; },{passive:true});
 document.addEventListener('touchend',e=>{ if(tsx==null) return;
   const ex=e.changedTouches[0].clientX, ey=e.changedTouches[0].clientY, dx=ex-tsx, dy=ey-tsy, W=vw();
@@ -936,20 +1017,78 @@ function drawLevel(W,H){
   }
 }
 
-/* ====================== 拍照（最高畫質 + 分享/儲存） ====================== */
-async function capture(){
+/* ====================== 小工具：toast / 震動 / 轉檔 ====================== */
+let toastTimer=null;
+function toast(html, ms){ const t=$('#toast'); t.innerHTML=html; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'), ms||1700); }
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms||30); }catch(e){} }
+function blobToDataURL(blob){ return new Promise((res,rej)=>{ const fr=new FileReader();
+  fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(blob); }); }
+function shareOrDownload(files){ // 網頁存檔：優先系統分享面板（內含「儲存影像」），否則下載
+  return (async()=>{
+    try{ if(navigator.canShare && navigator.canShare({files})){ await navigator.share({files}); return; } }
+    catch(e){ if(e && e.name==='AbortError') return; }
+    for(const f of files){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; a.click();
+      await new Promise(r=>setTimeout(r,200)); setTimeout(()=>URL.revokeObjectURL(a.href),3000); }
+  })();
+}
+function toFile(it){ return new File([it.blob],'男友救星_'+it.ts+'.jpg',{type:it.blob.type||'image/jpeg'}); }
+
+/* ====================== App 內相本（IndexedDB，網頁/失敗備援） ====================== */
+const ROLL_DB='byf-roll', ROLL_STORE='shots'; let rollDB=null, rollSeq=0;
+function openRoll(){ if(rollDB) return Promise.resolve(rollDB);
+  return new Promise((res,rej)=>{ const rq=indexedDB.open(ROLL_DB,1);
+    rq.onupgradeneeded=()=>{ rq.result.createObjectStore(ROLL_STORE,{keyPath:'id'}); };
+    rq.onsuccess=()=>{ rollDB=rq.result; res(rollDB); }; rq.onerror=()=>rej(rq.error); }); }
+function rollStore(mode){ return openRoll().then(db=>db.transaction(ROLL_STORE,mode).objectStore(ROLL_STORE)); }
+async function rollAdd(blob){ const st=await rollStore('readwrite');
+  const item={id:Date.now()+'-'+(rollSeq++), blob, ts:Date.now()};
+  return new Promise((res,rej)=>{ const r=st.add(item); r.onsuccess=()=>res(item); r.onerror=()=>rej(r.error); }); }
+async function rollAll(){ const st=await rollStore('readonly');
+  return new Promise((res,rej)=>{ const r=st.getAll(); r.onsuccess=()=>res((r.result||[]).sort((a,b)=>b.ts-a.ts)); r.onerror=()=>rej(r.error); }); }
+async function rollDel(id){ const st=await rollStore('readwrite'); return new Promise(res=>{ const r=st.delete(id); r.onsuccess=res; r.onerror=res; }); }
+async function rollClear(){ const st=await rollStore('readwrite'); return new Promise(res=>{ const r=st.clear(); r.onsuccess=res; r.onerror=res; }); }
+
+let lastThumbURL=null;
+async function refreshRoll(){
+  let all=[]; try{ all=await rollAll(); }catch(e){}
+  const btn=$('#rollBtn');
+  if(!all.length){ btn.classList.remove('show'); return; }
+  $('#rollCnt').textContent=all.length;
+  if(lastThumbURL) URL.revokeObjectURL(lastThumbURL);
+  lastThumbURL=URL.createObjectURL(all[0].blob); $('#rollThumb').src=lastThumbURL;
+  btn.classList.add('show');
+}
+
+/* ====================== 原生：存進系統相簿「男友救星」 ====================== */
+function mediaPlugin(){ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Media) || null; }
+let albumId=null; const ALBUM_NAME='男友救星';
+async function ensureAlbum(M){
+  if(albumId) return albumId;
+  try{ let r=await M.getAlbums(); let a=(r.albums||[]).find(x=>x.name===ALBUM_NAME);
+    if(!a){ try{ await M.createAlbum({name:ALBUM_NAME}); }catch(e){} r=await M.getAlbums(); a=(r.albums||[]).find(x=>x.name===ALBUM_NAME); }
+    albumId = a ? a.identifier : null;
+  }catch(e){ albumId=null; }
+  return albumId;
+}
+async function saveToGallery(blob){
+  const M=mediaPlugin(); if(!M) return false;
+  try{ const dataUrl=await blobToDataURL(blob); const id=await ensureAlbum(M);
+    const opts={ path:dataUrl, fileName:'男友救星_'+Date.now() }; if(id) opts.albumIdentifier=id;
+    await M.savePhoto(opts); return true;
+  }catch(e){ return false; }
+}
+
+/* ====================== 拍照（最高畫質） ====================== */
+async function grabBlob(){
   let blob=null;
   if(isNative){
     const cp=cpPlugin();
     try{ const r=await cp.capture({quality:92}); blob=await (await fetch('data:image/jpeg;base64,'+r.value)).blob(); }catch(e){ blob=null; }
   } else {
-    if(!video.videoWidth) return;
-    // Android Chrome：用 ImageCapture 拍更高畫質的靜照
+    if(!video.videoWidth) return null;
     const track = video.srcObject && video.srcObject.getVideoTracks && video.srcObject.getVideoTracks()[0];
-    if(track && window.ImageCapture){
-      try{ blob = await new ImageCapture(track).takePhoto(); }catch(e){ blob=null; }
-    }
-    // 後備：擷取目前畫面（以串流最高畫質）
+    if(track && window.ImageCapture){ try{ blob = await new ImageCapture(track).takePhoto(); }catch(e){ blob=null; } }
     if(!blob){
       const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
       const x=c.getContext('2d');
@@ -958,24 +1097,175 @@ async function capture(){
       blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
     }
   }
-  if(!blob) return;
-  blob=await applyFilterToBlob(blob);            // 把目前濾鏡烘進照片
-  const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60);
-  const file=new File([blob],'男友救星_'+Date.now()+'.jpg',{type:blob.type||'image/jpeg'});
-  // 分享/儲存面板（可存到相簿或傳給別人）
+  return blob;
+}
+let shooting=false;
+async function capture(){
+  if(shooting) return; shooting=true;
   try{
-    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
-  }catch(e){ if(e && e.name==='AbortError') return; }
-  // 後備：下載
-  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    let blob=await grabBlob();
+    if(!blob){ shooting=false; return; }
+    blob=await applyFilterToBlob(blob);            // 把目前濾鏡烘進照片
+    const f=$('#flash'); f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,60); buzz(30);
+    // 原生：靜靜存進系統相簿
+    if(isNative){
+      if(await saveToGallery(blob)){ toast('<b>✓</b> 已存進相簿「男友救星」'); return; }
+      // 失敗 → 退回 App 內相本
+    }
+    // 網頁 / 原生失敗：存進 App 內相本
+    try{ await rollAdd(blob); await refreshRoll(); toast('<b>✓</b> 已存到相本'); }
+    catch(e){ await shareOrDownload([new File([blob],'男友救星_'+Date.now()+'.jpg',{type:blob.type||'image/jpeg'})]); }
+  } finally { shooting=false; }
 }
 $('#shot').onclick=()=>capture();
 
-$('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 平常畫面很乾淨：相機＋人形/格線＋快門\n2. 點下方「選構圖」滑出面板：選大類→題材→用 ‹ › 切換構圖卡；面板裡有口訣與 📷 建議參數\n3. 收起面板後，畫面留著「人放這」位置；在畫面左右滑動可換構圖\n4. 右上 ⊿ 水平、▦ 格線\n5. 中央大鈕拍照 → 跳出分享/儲存（可存到相簿或傳出）\n\n核心：人放三分線、腳要進框、相機放低、別拍歪。'); };
+/* ====================== AI 即時構圖判斷（MoveNet Lightning） ====================== */
+let aiOn=false, aiLoading=false, aiActive=false, detector=null, aiTimer=null, aiBusy=false, lastOk=false, aiImg=null;
+const AI_LIBS=[
+  'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js',
+  'https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js'
+];
+function loadScript(src){ return new Promise((res,rej)=>{
+  if(document.querySelector('script[data-ai="'+src+'"]')) return res();
+  const s=document.createElement('script'); s.src=src; s.dataset.ai=src;
+  s.onload=()=>res(); s.onerror=()=>rej(new Error('load fail')); document.head.appendChild(s); }); }
+function aiBar(text, cls){ const b=$('#aiBar');
+  if(!text){ b.classList.remove('show'); return; }
+  b.className='aibar show'+(cls?(' '+cls):''); b.textContent=text; }
+
+async function ensureDetector(){
+  if(detector) return detector;
+  for(const u of AI_LIBS) await loadScript(u);
+  try{ await tf.setBackend('webgl'); }catch(e){}    // 失敗則用預設 backend（cpu）
+  await tf.ready();
+  detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet,
+    {modelType:'SinglePose.Lightning'});
+  return detector;
+}
+async function toggleAI(){
+  if(aiLoading) return;
+  if(aiOn){ aiOn=false; $('#aiBtn').classList.remove('on'); stopAILoop(); aiBar(''); return; }
+  aiLoading=true; $('#aiBtn').classList.add('on'); aiBar('🤖 AI 載入中…','load');
+  try{
+    await ensureDetector();
+    try{ await enableLevel(); }catch(e){}     // 取得傾角資料（判斷拍歪用）
+    aiOn=true; aiLoading=false; startAILoop();
+  }catch(e){
+    aiLoading=false; aiOn=false; $('#aiBtn').classList.remove('on');
+    aiBar('AI 載入失敗，第一次需要網路', null); setTimeout(()=>aiBar(''),2400);
+  }
+}
+$('#aiBtn').onclick=toggleAI;
+
+function startAILoop(){ stopAILoop(); aiActive=true; scheduleAI(); }
+function stopAILoop(){ aiActive=false; if(aiTimer){ clearTimeout(aiTimer); aiTimer=null; } lastOk=false; }
+function scheduleAI(){ if(!aiActive) return;
+  aiTimer=setTimeout(async()=>{ await runAI(); scheduleAI(); }, isNative?250:160); }
+
+async function getAIFrame(){
+  if(!isNative){
+    if(!video.videoWidth) return null;
+    return {src:video, w:video.videoWidth, h:video.videoHeight};
+  }
+  const cp=cpPlugin(); if(!cp || !cp.captureSample) return null;
+  try{
+    const r=await cp.captureSample({quality:40});
+    if(!aiImg) aiImg=new Image();
+    aiImg.src='data:image/jpeg;base64,'+r.value; await aiImg.decode();
+    return {src:aiImg, w:aiImg.naturalWidth, h:aiImg.naturalHeight};
+  }catch(e){ return null; }
+}
+async function runAI(){
+  if(!aiOn || aiBusy || !detector || document.hidden) return;
+  aiBusy=true;
+  try{
+    const fr=await getAIFrame();
+    if(fr){
+      const poses=await detector.estimatePoses(fr.src, {maxPoses:1, flipHorizontal:false});
+      const hint=judgeComposition(poses[0], fr.w, fr.h);
+      if(!hint){ aiBar(''); lastOk=false; }
+      else { aiBar(hint.text, hint.ok?'ok':null); if(hint.ok && !lastOk) buzz(20); lastOk=!!hint.ok; }
+    }
+  }catch(e){}
+  aiBusy=false;
+}
+
+/* 純函式：keypoints → 一句最該修正的提示（一次只講一件事） */
+function judgeComposition(pose, vw, vh){
+  if(!pose || !pose.keypoints || !vw) return null;
+  const kp={}; pose.keypoints.forEach(p=>{ kp[p.name]=p; });
+  const good=p=>p && p.score>0.3;
+  const pts=pose.keypoints.filter(p=>p.score>0.3);
+  if(pts.length<4) return null;                       // 找不到人 → 安靜
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+  const minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
+  const cx=(minX+maxX)/2/vw;                           // 主體中心 x（0~1）
+  const hFrac=(maxY-minY)/vh;                          // 主體高度佔比
+
+  const v=scene.v[vi];
+  const tx = v.fig ? v.fig[0] : (grid==='center'?0.5:0.33);   // 目標左右位置
+  const tsize = v.fig ? v.fig[2] : null;                      // 目標佔比
+
+  // 1) 傾斜（需有傾角資料）
+  if(levelOn && levelMode!=='flat' && Math.abs(roll)>6)
+    return {text:(roll>0?'↺ ':'↻ ')+'畫面歪了，轉正一點'};
+
+  // 2) 頭頂留白
+  const head = good(kp.nose)?kp.nose : (good(kp.left_eye)?kp.left_eye:(good(kp.right_eye)?kp.right_eye:null));
+  if(head && head.y/vh < 0.04) return {text:'頭頂太擠，鏡頭往上抬一點'};
+
+  // 3) 腳被切（全身構圖時：看得到膝、看不到踝，且已貼底）
+  const ankleSeen = good(kp.left_ankle)||good(kp.right_ankle);
+  const kneeSeen  = good(kp.left_knee)||good(kp.right_knee);
+  if(v.fig && v.fig[2]>=0.7 && kneeSeen && !ankleSeen && maxY/vh>0.8)
+    return {text:'腳被切到了，退後或鏡頭往下'};
+
+  // 4) 左右位置
+  const dx=cx-tx;
+  if(Math.abs(dx)>0.1) return {text: dx>0 ? '她偏右了，往左框一點' : '她偏左了，往右框一點'};
+
+  // 5) 佔比大小
+  if(tsize){
+    if(hFrac < tsize*0.6)  return {text:'人太小，靠近一點或變焦'};
+    if(hFrac > tsize*1.25) return {text:'太近了，退後一點'};
+  }
+  return {text:'✓ 構圖到位，拍！', ok:true};
+}
+
+/* ====================== 相本檢視 UI ====================== */
+const gallery=$('#gallery'), gGrid=$('#gGrid'), gView=$('#gView');
+let gItems=[], gURLs=[], gCurId=null;
+function revokeG(){ gURLs.forEach(u=>URL.revokeObjectURL(u)); gURLs=[]; }
+async function openGallery(){
+  try{ gItems=await rollAll(); }catch(e){ gItems=[]; }
+  revokeG(); gGrid.innerHTML='';
+  $('#gEmpty').style.display = gItems.length? 'none':'flex';
+  $('#gCount').textContent = gItems.length? '· '+gItems.length+' 張':'';
+  gItems.forEach(it=>{ const url=URL.createObjectURL(it.blob); gURLs.push(url);
+    const cell=document.createElement('div'); cell.className='gcell';
+    const im=document.createElement('img'); im.src=url; cell.appendChild(im);
+    cell.onclick=()=>openView(it.id,url); gGrid.appendChild(cell); });
+  gallery.classList.add('show');
+}
+function closeGallery(){ gallery.classList.remove('show'); gView.classList.remove('show'); revokeG(); }
+function openView(id,url){ gCurId=id; $('#gvImg').src=url; gView.classList.add('show'); }
+function closeView(){ gView.classList.remove('show'); }
+function gCur(){ return gItems.find(x=>x.id===gCurId); }
+$('#rollBtn').onclick=openGallery;
+$('#gClose').onclick=closeGallery;
+$('#gvBack').onclick=closeView;
+$('#gvSave').onclick=()=>{ const it=gCur(); if(it) shareOrDownload([toFile(it)]); };
+$('#gvDel').onclick=async()=>{ if(!gCurId) return; await rollDel(gCurId); closeView(); await openGallery(); await refreshRoll(); };
+$('#gSaveAll').onclick=async()=>{ if(!gItems.length) return; await shareOrDownload(gItems.map(toFile)); };
+$('#gClear').onclick=async()=>{ if(!gItems.length) return;
+  if(!confirm('確定清空 App 內相本？\n（已存到系統相簿的照片不受影響）')) return;
+  await rollClear(); await openGallery(); await refreshRoll(); };
+
+$('#helpBtn').onclick=()=>{ alert('男友救星 · 構圖教練\n\n1. 平常畫面很乾淨：相機＋人形/格線＋快門\n2. 點下方「選構圖」滑出面板：選大類→題材→用 ‹ › 切換構圖卡；面板裡有口訣與 📷 建議參數\n3. 收起面板後，畫面留著「人放這」位置；在畫面左右滑動可換構圖\n4. 右上 🤖 AI：開了會即時判斷人物構圖，畫面上方提示「往左/抬高/靠近」，到位變綠燈（第一次開需網路下載模型）\n5. 右上 ⊿ 水平、▦ 格線\n6. 中央大鈕拍照 → 靜靜存起來、不打斷（App 版直接進手機相簿「男友救星」；網頁版進 App 相本，左下縮圖可回看、再批次存出）\n\n核心：人放三分線、腳要進框、相機放低、別拍歪。'); };
 
 /* ====================== 啟動 ====================== */
-syncGridMenu(); resize(); draw(); showStart();
+syncGridMenu(); resize(); draw(); showStart(); refreshRoll();
 document.addEventListener('click',()=>{ if(!levelOn && levelMode) enableLevel(); },{once:true});
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 </script>
